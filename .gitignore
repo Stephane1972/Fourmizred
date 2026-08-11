@@ -1,0 +1,13 @@
+# Dépendances
+node_modules/
+
+# Build Capacitor / Android (générés automatiquement, pas à versionner)
+android/app/build/
+android/.gradle/
+android/local.properties
+dist/
+build/
+
+# Fichiers système
+.DS_Store
+Thumbs.db

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>FourmiRA — Prototype RTS</title>
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: #16110a;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+  #hud {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #f0e0c0;
+    font-size: 13px;
+    z-index: 10;
+    max-width: 300px;
+    line-height: 1.5;
+  }
+  #hud b { color: #ffd27a; }
+  #selection-info {
+    position: absolute; bottom: 10px; left: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: #f0e0c0;
+    font-size: 13px;
+    z-index: 10;
+  }
+  canvas { display: block; cursor: crosshair; touch-action: none; }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <b>Prototype RTS — FourmiRA</b><br>
+  Clic gauche / toucher : sélectionner (glisser pour une sélection multiple)<br>
+  Clic droit (souris) ou toucher le sol (tactile, fourmis sélectionnées) : déplacer<br>
+  Toucher/cliquer une ressource verte (fourmis sélectionnées) : récolter en boucle<br>
+  Flèches / ZQSD (clavier) ou glisser à deux doigts (tactile) : faire défiler la carte<br>
+  🌿 Nourriture au nid : <span id="compteur-nourriture">0</span>
+</div>
+<div id="selection-info">
+  <span id="selection-text">Aucune fourmi sélectionnée</span>
+  <button id="btn-stop" style="margin-left:10px;background:#5a3d1e;color:#f0e0c0;border:1px solid #8a6535;border-radius:5px;padding:3px 10px;cursor:pointer;">Stop</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const selInfo = document.getElementById('selection-info');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ---------------------------------------------------------
+// CARTE
+// ---------------------------------------------------------
+const MAP_W = 3000;
+const MAP_H = 2000;
+let camX = MAP_W / 2 - canvas.width / 2;
+let camY = MAP_H / 2 - canvas.height / 2;
+const camSpeed = 12;
+
+const touches = {};
+window.addEventListener('keydown', e => touches[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => touches[e.key.toLowerCase()] = false);
+
+function updateCamera() {
+  if (touches['arrowup'] || touches['z']) camY -= camSpeed;
+  if (touches['arrowdown'] || touches['s']) camY += camSpeed;
+  if (touches['arrowleft'] || touches['q']) camX -= camSpeed;
+  if (touches['arrowright'] || touches['d']) camX += camSpeed;
+  camX = Math.max(0, Math.min(MAP_W - canvas.width, camX));
+  camY = Math.max(0, Math.min(MAP_H - canvas.height, camY));
+}
+
+// Quelques taches de terrain fixes pour donner du repère visuel
+const tachesTerrain = [];
+for (let i = 0; i < 60; i++) {
+  tachesTerrain.push({
+    x: Math.random() * MAP_W,
+    y: Math.random() * MAP_H,
+    r: 20 + Math.random() * 50,
+    c: Math.random() > 0.5 ? '#c9ab7c' : '#e0c69a'
+  });
+}
+
+// Ressources de nourriture, en quantité finie
+const ressources = [];
+for (let i = 0; i < 8; i++) {
+  ressources.push({
+    x: 200 + Math.random() * (MAP_W - 400),
+    y: 200 + Math.random() * (MAP_H - 400),
+    quantite: 300,
+    quantiteInitiale: 300
+  });
+}
+
+let nourritureAuNid = 0;
+
+// Le nid de départ
+const nid = { x: MAP_W / 2, y: MAP_H / 2 };
+
+function dessinerTerrain(ctx) {
+  ctx.fillStyle = '#d9c199';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (const t of tachesTerrain) {
+    const sx = t.x - camX, sy = t.y - camY;
+    if (sx < -100 || sx > canvas.width + 100 || sy < -100 || sy > canvas.height + 100) continue;
+    ctx.fillStyle = t.c;
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, t.r, t.r * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Nid
+  const nx = nid.x - camX, ny = nid.y - camY;
+  ctx.fillStyle = '#3a2818';
+  ctx.beginPath();
+  ctx.ellipse(nx, ny, 45, 35, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#241a10';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = '#f0e0c0';
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Nid', nx, ny - 45);
+
+  // Ressources
+  for (const r of ressources) {
+    if (r.quantite <= 0) continue;
+    const sx = r.x - camX, sy = r.y - camY;
+    if (sx < -30 || sx > canvas.width + 30 || sy < -30 || sy > canvas.height + 30) continue;
+    const echelle = 0.4 + 0.6 * (r.quantite / r.quantiteInitiale);
+    ctx.fillStyle = '#5a8a3a';
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, 16 * echelle, 12 * echelle, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#7ab255';
+    ctx.beginPath();
+    ctx.ellipse(sx - 4, sy - 3, 6, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ---------------------------------------------------------
+// FOURMI — unité contrôlable
+// ---------------------------------------------------------
+class Fourmi {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.angle = 0;
+    this.vitesseMax = 2.4;
+    this.taille = 11;
+    this.phase = Math.random() * Math.PI * 2;
+    this.selectionnee = false;
+    this.cible = null; // {x, y} ou null
+
+    // Récolte
+    this.etat = 'idle'; // idle | versRessource | recolte | versNid | depose
+    this.ressourceCible = null;
+    this.cargo = 0;
+    this.cargoMax = 20;
+    this.minuteur = 0;
+  }
+
+  ordonnerRecolte(ressource) {
+    this.ressourceCible = ressource;
+    this.etat = 'versRessource';
+    this.cible = { x: ressource.x, y: ressource.y };
+  }
+
+  ordonnerDeplacementLibre(x, y) {
+    this.ressourceCible = null;
+    this.etat = 'idle';
+    this.cible = { x, y };
+  }
+
+  update() {
+    // Déplacement vers la cible courante, quel que soit l'état
+    if (this.cible) {
+      const dx = this.cible.x - this.x;
+      const dy = this.cible.y - this.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 4) {
+        this.cible = null;
+      } else {
+        this.angle = Math.atan2(dy, dx);
+        const v = Math.min(this.vitesseMax, dist);
+        this.x += Math.cos(this.angle) * v;
+        this.y += Math.sin(this.angle) * v;
+        this.phase += v * 0.5;
+      }
+      return; // en mouvement : pas de changement d'état ce tour-ci
+    }
+
+    // Arrivée à destination : que faire selon l'état ?
+    if (this.etat === 'versRessource') {
+      if (!this.ressourceCible || this.ressourceCible.quantite <= 0) {
+        this.etat = 'idle';
+        this.ressourceCible = null;
+        return;
+      }
+      this.etat = 'recolte';
+      this.minuteur = 60; // ~1s de récolte sur place
+    } else if (this.etat === 'recolte') {
+      this.minuteur--;
+      if (this.minuteur <= 0) {
+        const r = this.ressourceCible;
+        if (r) {
+          const pris = Math.min(this.cargoMax, r.quantite);
+          this.cargo = pris;
+          r.quantite -= pris;
+        }
+        this.etat = 'versNid';
+        this.cible = { x: nid.x, y: nid.y };
+      }
+    } else if (this.etat === 'versNid') {
+      this.etat = 'depose';
+      this.minuteur = 20; // petite pause de déchargement
+    } else if (this.etat === 'depose') {
+      this.minuteur--;
+      if (this.minuteur <= 0) {
+        nourritureAuNid += this.cargo;
+        document.getElementById('compteur-nourriture').textContent = nourritureAuNid;
+        this.cargo = 0;
+        if (this.ressourceCible && this.ressourceCible.quantite > 0) {
+          // Boucle automatique façon Harvester : retour à la ressource
+          this.etat = 'versRessource';
+          this.cible = { x: this.ressourceCible.x, y: this.ressourceCible.y };
+        } else {
+          this.etat = 'idle';
+          this.ressourceCible = null;
+        }
+      }
+    }
+  }
+
+  dessinerPatte(ctx, ax, ay, longueur, offsetPhase, cote, inclinaison) {
+    const balancement = Math.sin(this.phase + offsetPhase) * 0.5;
+    const angleBase = (cote > 0 ? 1.0 : -1.0) + inclinaison * cote;
+    const coudeX = ax + Math.cos(angleBase + balancement * 0.4) * longueur * 0.5;
+    const coudeY = ay + Math.sin(angleBase + balancement * 0.4) * longueur * 0.5 + longueur * 0.2;
+    const boutX = coudeX + Math.cos(angleBase + balancement) * longueur * 0.5;
+    const boutY = coudeY + Math.sin(angleBase + balancement) * longueur * 0.4 + longueur * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(coudeX, coudeY);
+    ctx.lineTo(boutX, boutY);
+    ctx.stroke();
+  }
+
+  draw(ctx, camX, camY) {
+    const sx = this.x - camX, sy = this.y - camY;
+    if (sx < -30 || sx > canvas.width + 30 || sy < -30 || sy > canvas.height + 30) return;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    // Anneau de sélection / cible
+    if (this.selectionnee) {
+      ctx.strokeStyle = '#3ae03a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 14, 9, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Cargaison de nourriture transportée
+    if (this.cargo > 0) {
+      ctx.fillStyle = '#5a8a3a';
+      ctx.beginPath();
+      ctx.ellipse(0, -14, 5, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.rotate(this.angle);
+    ctx.scale(this.taille / 10, this.taille / 10);
+
+    ctx.lineWidth = 1.1;
+    ctx.strokeStyle = '#3a1c12';
+
+    this.dessinerPatte(ctx, 3, 1.5, 11, 0, 1, -0.7);
+    this.dessinerPatte(ctx, 1, 2, 11, Math.PI, 1, 0.1);
+    this.dessinerPatte(ctx, -1, 1.8, 10, 0, 1, 0.9);
+    this.dessinerPatte(ctx, 3, -1.5, 11, Math.PI, -1, -0.7);
+    this.dessinerPatte(ctx, 1, -2, 11, 0, -1, 0.1);
+    this.dessinerPatte(ctx, -1, -1.8, 10, Math.PI, -1, 0.9);
+
+    ctx.fillStyle = '#1c1c1c';
+    ctx.beginPath();
+    ctx.ellipse(-6, 0, 5.5, 4.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#6b2f18';
+    ctx.beginPath();
+    ctx.ellipse(1, 0, 3.2, 2.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#241512';
+    ctx.beginPath();
+    ctx.ellipse(8, 0, 3.2, 2.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+// Population de départ, autour du nid
+const fourmis = [];
+for (let i = 0; i < 10; i++) {
+  const a = (i / 10) * Math.PI * 2;
+  fourmis.push(new Fourmi(
+    nid.x + Math.cos(a) * 70,
+    nid.y + Math.sin(a) * 70
+  ));
+}
+
+// ---------------------------------------------------------
+// SÉLECTION & DÉPLACEMENT — unifié souris ET tactile (Pointer Events)
+// ---------------------------------------------------------
+let selectionEnCours = false;
+let selStart = { x: 0, y: 0 };
+let selEnd = { x: 0, y: 0 };
+let selPointerId = null;
+
+const activePointers = new Map();
+let panMode = false;
+let panStartMid = { x: 0, y: 0 };
+let panStartCam = { x: 0, y: 0 };
+
+const SEUIL_GLISSEMENT = 8;   // au-delà = un glissement, pas un tap
+const RAYON_TOUCHE_FOURMI = 22; // plus tolérant qu'à la souris, doigt = imprécis
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function milieu(a, b) {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+function trouverFourmiSous(clientX, clientY) {
+  const worldX = clientX + camX, worldY = clientY + camY;
+  let plusProche = null, meilleureDist = RAYON_TOUCHE_FOURMI;
+  for (const f of fourmis) {
+    const d = Math.hypot(f.x - worldX, f.y - worldY);
+    if (d < meilleureDist) { meilleureDist = d; plusProche = f; }
+  }
+  return plusProche;
+}
+
+const RAYON_TOUCHE_RESSOURCE = 26;
+
+function trouverRessourceSous(clientX, clientY) {
+  const worldX = clientX + camX, worldY = clientY + camY;
+  for (const r of ressources) {
+    if (r.quantite <= 0) continue;
+    if (Math.hypot(r.x - worldX, r.y - worldY) < RAYON_TOUCHE_RESSOURCE) return r;
+  }
+  return null;
+}
+
+function ordonnerAction(clientX, clientY) {
+  const ressourceTouchee = trouverRessourceSous(clientX, clientY);
+  const selectionnees = fourmis.filter(f => f.selectionnee);
+  if (ressourceTouchee) {
+    selectionnees.forEach(f => f.ordonnerRecolte(ressourceTouchee));
+  } else {
+    const worldX = clientX + camX, worldY = clientY + camY;
+    selectionnees.forEach((f, i) => {
+      const angle = (i / Math.max(1, selectionnees.length)) * Math.PI * 2;
+      const rayon = selectionnees.length > 1 ? 18 : 0;
+      f.ordonnerDeplacementLibre(worldX + Math.cos(angle) * rayon, worldY + Math.sin(angle) * rayon);
+    });
+  }
+}
+
+function majTexteSelection() {
+  const n = fourmis.filter(f => f.selectionnee).length;
+  document.getElementById('selection-text').textContent = n > 0 ? `${n} fourmi(s) sélectionnée(s)` : 'Aucune fourmi sélectionnée';
+}
+
+document.getElementById('btn-stop').addEventListener('click', () => {
+  fourmis.forEach(f => f.selectionnee = false);
+  majTexteSelection();
+});
+
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  // Clic droit souris = ordre de déplacement immédiat (comportement desktop classique)
+  if (e.pointerType === 'mouse' && e.button === 2) {
+    ordonnerAction(e.clientX, e.clientY);
+    return;
+  }
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+  if (activePointers.size === 2) {
+    // Deux doigts posés : on bascule en mode défilement de la carte
+    selectionEnCours = false;
+    panMode = true;
+    const pts = Array.from(activePointers.values());
+    panStartMid = milieu(pts[0], pts[1]);
+    panStartCam = { x: camX, y: camY };
+    return;
+  }
+
+  if (activePointers.size === 1 && !panMode) {
+    selectionEnCours = true;
+    selPointerId = e.pointerId;
+    selStart = { x: e.clientX, y: e.clientY };
+    selEnd = { ...selStart };
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!activePointers.has(e.pointerId)) return;
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (panMode && activePointers.size === 2) {
+    const pts = Array.from(activePointers.values());
+    const mid = milieu(pts[0], pts[1]);
+    camX = panStartCam.x - (mid.x - panStartMid.x);
+    camY = panStartCam.y - (mid.y - panStartMid.y);
+    camX = Math.max(0, Math.min(MAP_W - canvas.width, camX));
+    camY = Math.max(0, Math.min(MAP_H - canvas.height, camY));
+    return;
+  }
+
+  if (selectionEnCours && e.pointerId === selPointerId) {
+    selEnd = { x: e.clientX, y: e.clientY };
+  }
+});
+
+function finPointeur(e) {
+  activePointers.delete(e.pointerId);
+
+  if (panMode) {
+    if (activePointers.size < 2) panMode = false;
+    return;
+  }
+
+  if (selectionEnCours && e.pointerId === selPointerId) {
+    selectionEnCours = false;
+    const distanceGlissee = Math.hypot(selEnd.x - selStart.x, selEnd.y - selStart.y);
+
+    if (distanceGlissee > SEUIL_GLISSEMENT) {
+      // Glissement = sélection rectangulaire
+      const x1 = Math.min(selStart.x, selEnd.x) + camX;
+      const x2 = Math.max(selStart.x, selEnd.x) + camX;
+      const y1 = Math.min(selStart.y, selEnd.y) + camY;
+      const y2 = Math.max(selStart.y, selEnd.y) + camY;
+      for (const f of fourmis) {
+        f.selectionnee = (f.x >= x1 && f.x <= x2 && f.y >= y1 && f.y <= y2);
+      }
+      majTexteSelection();
+    } else {
+      // Simple tap/clic : soit on touche une fourmi, soit le sol
+      const fourmiTouchee = trouverFourmiSous(selStart.x, selStart.y);
+      if (fourmiTouchee) {
+        fourmis.forEach(f => f.selectionnee = (f === fourmiTouchee));
+        majTexteSelection();
+      } else if (e.pointerType !== 'mouse') {
+        // Au tactile, taper le sol (ou une ressource) avec une sélection active = ordre d'action
+        const dejaSelectionnees = fourmis.some(f => f.selectionnee);
+        if (dejaSelectionnees) ordonnerAction(selStart.x, selStart.y);
+      } else {
+        // À la souris, cliquer le sol vide désélectionne (le déplacement passe par le clic droit)
+        fourmis.forEach(f => f.selectionnee = false);
+        majTexteSelection();
+      }
+    }
+  }
+}
+
+canvas.addEventListener('pointerup', finPointeur);
+canvas.addEventListener('pointercancel', finPointeur);
+
+// ---------------------------------------------------------
+// BOUCLE PRINCIPALE
+// ---------------------------------------------------------
+function loop() {
+  updateCamera();
+  dessinerTerrain(ctx);
+
+  for (const f of fourmis) {
+    f.update();
+    f.draw(ctx, camX, camY);
+  }
+
+  // Rectangle de sélection en cours
+  if (selectionEnCours) {
+    const x = Math.min(selStart.x, selEnd.x);
+    const y = Math.min(selStart.y, selEnd.y);
+    const w = Math.abs(selEnd.x - selStart.x);
+    const h = Math.abs(selEnd.y - selStart.y);
+    ctx.strokeStyle = 'rgba(58,224,58,0.9)';
+    ctx.fillStyle = 'rgba(58,224,58,0.15)';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+  }
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
