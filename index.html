@@ -32,6 +32,42 @@
     font-size: 13px;
     z-index: 10;
   }
+  #panneau-construction {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #f0e0c0;
+    font-size: 13px;
+    z-index: 10;
+  }
+  #panneau-construction button {
+    display: block;
+    width: 100%;
+    background: #5a3d1e;
+    color: #f0e0c0;
+    border: 1px solid #8a6535;
+    border-radius: 5px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  #panneau-construction button:active { background: #7a5228; }
+  #panneau-construction button.actif { outline: 2px solid #3ae03a; }
+  #message-jeu {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.75);
+    padding: 10px 18px;
+    border-radius: 8px;
+    color: #ffb0b0;
+    font-size: 14px;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
   canvas { display: block; cursor: crosshair; touch-action: none; }
 </style>
 </head>
@@ -42,9 +78,15 @@
   Clic gauche / toucher : sélectionner (glisser pour une sélection multiple)<br>
   Clic droit (souris) ou toucher le sol (tactile, fourmis sélectionnées) : déplacer<br>
   Toucher/cliquer une ressource verte (fourmis sélectionnées) : récolter en boucle<br>
+  Panneau de droite : construire une Chambre (produit des ouvrières)<br>
   Flèches / ZQSD (clavier) ou glisser à deux doigts (tactile) : faire défiler la carte<br>
   🌿 Nourriture au nid : <span id="compteur-nourriture">0</span>
 </div>
+<div id="panneau-construction">
+  <b>Construction</b>
+  <button id="btn-construire-chambre">Chambre (150 🌿)<br><small>Produit des ouvrières</small></button>
+</div>
+<div id="message-jeu"></div>
 <div id="selection-info">
   <span id="selection-text">Aucune fourmi sélectionnée</span>
   <button id="btn-stop" style="margin-left:10px;background:#5a3d1e;color:#f0e0c0;border:1px solid #8a6535;border-radius:5px;padding:3px 10px;cursor:pointer;">Stop</button>
@@ -110,6 +152,55 @@ for (let i = 0; i < 8; i++) {
 
 let nourritureAuNid = 0;
 
+function afficherMessage(texte) {
+  const el = document.getElementById('message-jeu');
+  el.textContent = texte;
+  el.style.opacity = '1';
+  clearTimeout(afficherMessage._t);
+  afficherMessage._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+// ---------------------------------------------------------
+// BÂTIMENTS
+// ---------------------------------------------------------
+const TYPES_BATIMENT = {
+  chambre: {
+    label: 'Chambre',
+    cout: 150,
+    rayon: 26,
+    couleur: '#4a3018',
+    coutProduction: 40,
+    delaiProduction: 300 // ~5s à 60fps
+  }
+};
+
+const batiments = [];
+let modePlacement = null; // 'chambre' ou null
+
+document.getElementById('btn-construire-chambre').addEventListener('click', () => {
+  const bouton = document.getElementById('btn-construire-chambre');
+  if (modePlacement === 'chambre') {
+    modePlacement = null;
+    bouton.classList.remove('actif');
+    return;
+  }
+  modePlacement = 'chambre';
+  bouton.classList.add('actif');
+  afficherMessage('Touchez/cliquez la carte pour placer la Chambre');
+});
+
+function placerBatiment(type, worldX, worldY) {
+  const def = TYPES_BATIMENT[type];
+  if (nourritureAuNid < def.cout) {
+    afficherMessage('Pas assez de nourriture');
+    return false;
+  }
+  nourritureAuNid -= def.cout;
+  document.getElementById('compteur-nourriture').textContent = nourritureAuNid;
+  batiments.push({ type, x: worldX, y: worldY, minuteurProduction: def.delaiProduction });
+  return true;
+}
+
 // Le nid de départ
 const nid = { x: MAP_W / 2, y: MAP_H / 2 };
 
@@ -139,6 +230,30 @@ function dessinerTerrain(ctx) {
   ctx.font = '12px Arial';
   ctx.textAlign = 'center';
   ctx.fillText('Nid', nx, ny - 45);
+
+  // Bâtiments construits
+  for (const b of batiments) {
+    const def = TYPES_BATIMENT[b.type];
+    const bx = b.x - camX, by = b.y - camY;
+    if (bx < -60 || bx > canvas.width + 60 || by < -60 || by > canvas.height + 60) continue;
+    ctx.fillStyle = def.couleur;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, def.rayon, def.rayon * 0.75, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#241a10';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#f0e0c0';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(def.label, bx, by - def.rayon - 6);
+    // Barre de progression de production
+    const progression = 1 - (b.minuteurProduction / def.delaiProduction);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(bx - 18, by + def.rayon + 4, 36, 4);
+    ctx.fillStyle = '#3ae03a';
+    ctx.fillRect(bx - 18, by + def.rayon + 4, 36 * progression, 4);
+  }
 
   // Ressources
   for (const r of ressources) {
@@ -403,6 +518,16 @@ canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId);
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
+  // Mode placement de bâtiment actif : ce tap/clic pose le bâtiment et rien d'autre
+  if (modePlacement && !(e.pointerType === 'mouse' && e.button === 2)) {
+    const worldX = e.clientX + camX, worldY = e.clientY + camY;
+    const pose = placerBatiment(modePlacement, worldX, worldY);
+    if (pose) afficherMessage('Chambre construite');
+    modePlacement = null;
+    document.getElementById('btn-construire-chambre').classList.remove('actif');
+    return;
+  }
+
   // Clic droit souris = ordre de déplacement immédiat (comportement desktop classique)
   if (e.pointerType === 'mouse' && e.button === 2) {
     ordonnerAction(e.clientX, e.clientY);
@@ -497,6 +622,24 @@ canvas.addEventListener('pointercancel', finPointeur);
 function loop() {
   updateCamera();
   dessinerTerrain(ctx);
+
+  // Production des bâtiments
+  for (const b of batiments) {
+    const def = TYPES_BATIMENT[b.type];
+    b.minuteurProduction--;
+    if (b.minuteurProduction <= 0) {
+      if (nourritureAuNid >= def.coutProduction) {
+        nourritureAuNid -= def.coutProduction;
+        document.getElementById('compteur-nourriture').textContent = nourritureAuNid;
+        const angle = Math.random() * Math.PI * 2;
+        fourmis.push(new Fourmi(
+          b.x + Math.cos(angle) * (def.rayon + 15),
+          b.y + Math.sin(angle) * (def.rayon + 15)
+        ));
+      }
+      b.minuteurProduction = def.delaiProduction;
+    }
+  }
 
   for (const f of fourmis) {
     f.update();
