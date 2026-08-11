@@ -1,10 +1,13 @@
 # Dépendances
 node_modules/
 
-# Build Capacitor / Android (générés automatiquement, pas à versionner)
-android/app/build/
-android/.gradle/
-android/local.properties
+# Assets web générés en CI à partir de index.html — pas la source
+www/
+
+# Projet Android généré par Capacitor (npx cap add android) — recréé à chaque build CI
+android/
+
+# Build Capacitor / Android
 dist/
 build/
 

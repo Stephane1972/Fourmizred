@@ -79,6 +79,7 @@
   Clic droit (souris) ou toucher le sol (tactile, fourmis sélectionnées) : déplacer<br>
   Toucher/cliquer une ressource verte (fourmis sélectionnées) : récolter en boucle<br>
   Panneau de droite : construire une Chambre (produit des ouvrières)<br>
+  ⚔️ Une colonie ennemie attaque depuis le sud-est — défendez vos fourmis !<br>
   Flèches / ZQSD (clavier) ou glisser à deux doigts (tactile) : faire défiler la carte<br>
   🌿 Nourriture au nid : <span id="compteur-nourriture">0</span>
 </div>
@@ -231,6 +232,22 @@ function dessinerTerrain(ctx) {
   ctx.textAlign = 'center';
   ctx.fillText('Nid', nx, ny - 45);
 
+  // Nid ennemi
+  const enx = nidEnnemi.x - camX, eny = nidEnnemi.y - camY;
+  if (enx > -60 && enx < canvas.width + 60 && eny > -60 && eny < canvas.height + 60) {
+    ctx.fillStyle = '#3a1414';
+    ctx.beginPath();
+    ctx.ellipse(enx, eny, 45, 35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1a0808';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#f0c0c0';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Nid ennemi', enx, eny - 45);
+  }
+
   // Bâtiments construits
   for (const b of batiments) {
     const def = TYPES_BATIMENT[b.type];
@@ -276,7 +293,7 @@ function dessinerTerrain(ctx) {
 // FOURMI — unité contrôlable
 // ---------------------------------------------------------
 class Fourmi {
-  constructor(x, y) {
+  constructor(x, y, faction) {
     this.x = x;
     this.y = y;
     this.angle = 0;
@@ -285,6 +302,12 @@ class Fourmi {
     this.phase = Math.random() * Math.PI * 2;
     this.selectionnee = false;
     this.cible = null; // {x, y} ou null
+
+    // Combat
+    this.faction = faction || 'joueur'; // 'joueur' ou 'ennemi'
+    this.hpMax = 100;
+    this.hp = 100;
+    this.minuteurAttaque = 0;
 
     // Récolte
     this.etat = 'idle'; // idle | versRessource | recolte | versNid | depose
@@ -407,8 +430,12 @@ class Fourmi {
     ctx.rotate(this.angle);
     ctx.scale(this.taille / 10, this.taille / 10);
 
+    const couleurs = this.faction === 'ennemi'
+      ? { abdomen: '#4a1414', thorax: '#7a2a12', tete: '#2a0f08', patte: '#5a1c10' }
+      : { abdomen: '#1c1c1c', thorax: '#6b2f18', tete: '#241512', patte: '#3a1c12' };
+
     ctx.lineWidth = 1.1;
-    ctx.strokeStyle = '#3a1c12';
+    ctx.strokeStyle = couleurs.patte;
 
     this.dessinerPatte(ctx, 3, 1.5, 11, 0, 1, -0.7);
     this.dessinerPatte(ctx, 1, 2, 11, Math.PI, 1, 0.1);
@@ -417,22 +444,31 @@ class Fourmi {
     this.dessinerPatte(ctx, 1, -2, 11, 0, -1, 0.1);
     this.dessinerPatte(ctx, -1, -1.8, 10, Math.PI, -1, 0.9);
 
-    ctx.fillStyle = '#1c1c1c';
+    ctx.fillStyle = couleurs.abdomen;
     ctx.beginPath();
     ctx.ellipse(-6, 0, 5.5, 4.2, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#6b2f18';
+    ctx.fillStyle = couleurs.thorax;
     ctx.beginPath();
     ctx.ellipse(1, 0, 3.2, 2.3, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#241512';
+    ctx.fillStyle = couleurs.tete;
     ctx.beginPath();
     ctx.ellipse(8, 0, 3.2, 2.7, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
+
+    // Barre de vie, affichée seulement si la fourmi a déjà été blessée
+    if (this.hp < this.hpMax) {
+      const largeur = 18;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(sx - largeur / 2, sy - 20, largeur, 3);
+      ctx.fillStyle = this.hp / this.hpMax > 0.3 ? '#3ae03a' : '#e03a3a';
+      ctx.fillRect(sx - largeur / 2, sy - 20, largeur * (this.hp / this.hpMax), 3);
+    }
   }
 }
 
@@ -442,8 +478,60 @@ for (let i = 0; i < 10; i++) {
   const a = (i / 10) * Math.PI * 2;
   fourmis.push(new Fourmi(
     nid.x + Math.cos(a) * 70,
-    nid.y + Math.sin(a) * 70
+    nid.y + Math.sin(a) * 70,
+    'joueur'
   ));
+}
+
+// ---------------------------------------------------------
+// ENNEMI — une colonie rivale avec son propre nid
+// ---------------------------------------------------------
+const nidEnnemi = { x: MAP_W - 350, y: MAP_H - 300 };
+const ennemis = [];
+const MAX_ENNEMIS = 14;
+let minuteurSpawnEnnemi = 200;
+const DETECTION_ENNEMI = 220;
+const PORTEE_ATTAQUE = 18;
+const DEGATS_PAR_COUP = 7;
+const COOLDOWN_ATTAQUE = 45;
+
+function ecarterEnnemiAI() {
+  for (const e of ennemis) {
+    if (e.hp <= 0) continue;
+    let cible = null, meilleureDist = DETECTION_ENNEMI;
+    for (const f of fourmis) {
+      const d = Math.hypot(f.x - e.x, f.y - e.y);
+      if (d < meilleureDist) { meilleureDist = d; cible = f; }
+    }
+    if (cible) {
+      e.cible = { x: cible.x, y: cible.y };
+    } else if (!e.cible) {
+      e.cible = {
+        x: nidEnnemi.x + (Math.random() - 0.5) * 300,
+        y: nidEnnemi.y + (Math.random() - 0.5) * 300
+      };
+    }
+  }
+}
+
+function resoudreCombats() {
+  for (const f of fourmis) if (f.minuteurAttaque > 0) f.minuteurAttaque--;
+  for (const e of ennemis) if (e.minuteurAttaque > 0) e.minuteurAttaque--;
+
+  for (const f of fourmis) {
+    if (f.hp <= 0) continue;
+    for (const e of ennemis) {
+      if (e.hp <= 0) continue;
+      if (Math.hypot(f.x - e.x, f.y - e.y) < PORTEE_ATTAQUE) {
+        if (f.minuteurAttaque <= 0) { e.hp -= DEGATS_PAR_COUP; f.minuteurAttaque = COOLDOWN_ATTAQUE; }
+        if (e.minuteurAttaque <= 0) { f.hp -= DEGATS_PAR_COUP; e.minuteurAttaque = COOLDOWN_ATTAQUE; }
+        break;
+      }
+    }
+  }
+
+  for (let i = fourmis.length - 1; i >= 0; i--) if (fourmis[i].hp <= 0) fourmis.splice(i, 1);
+  for (let i = ennemis.length - 1; i >= 0; i--) if (ennemis[i].hp <= 0) ennemis.splice(i, 1);
 }
 
 // ---------------------------------------------------------
@@ -623,6 +711,20 @@ function loop() {
   updateCamera();
   dessinerTerrain(ctx);
 
+  // Apparition périodique des ennemis
+  minuteurSpawnEnnemi--;
+  if (minuteurSpawnEnnemi <= 0 && ennemis.length < MAX_ENNEMIS) {
+    const angle = Math.random() * Math.PI * 2;
+    ennemis.push(new Fourmi(
+      nidEnnemi.x + Math.cos(angle) * 60,
+      nidEnnemi.y + Math.sin(angle) * 60,
+      'ennemi'
+    ));
+    minuteurSpawnEnnemi = 220;
+  }
+  ecarterEnnemiAI();
+  resoudreCombats();
+
   // Production des bâtiments
   for (const b of batiments) {
     const def = TYPES_BATIMENT[b.type];
@@ -634,7 +736,8 @@ function loop() {
         const angle = Math.random() * Math.PI * 2;
         fourmis.push(new Fourmi(
           b.x + Math.cos(angle) * (def.rayon + 15),
-          b.y + Math.sin(angle) * (def.rayon + 15)
+          b.y + Math.sin(angle) * (def.rayon + 15),
+          'joueur'
         ));
       }
       b.minuteurProduction = def.delaiProduction;
@@ -644,6 +747,11 @@ function loop() {
   for (const f of fourmis) {
     f.update();
     f.draw(ctx, camX, camY);
+  }
+
+  for (const e of ennemis) {
+    e.update();
+    e.draw(ctx, camX, camY);
   }
 
   // Rectangle de sélection en cours

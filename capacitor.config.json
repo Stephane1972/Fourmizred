@@ -1,0 +1,9 @@
+{
+  "appId": "com.fourmizred.app",
+  "appName": "Fourmizred",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true
+  }
+}
