@@ -49,6 +49,21 @@ L'APK généré est un build **debug** (signé automatiquement avec une
 clé de développement) — suffisant pour tester et installer
 directement, mais pas pour publier sur le Play Store en l'état.
 
+## Corrections techniques appliquées
+
+- **Viewport mobile** : balise `<meta name="viewport">` ajoutée (manquait, pouvait fausser l'échelle/le tactile en WebView Android)
+- **deltaTime** : tous les déplacements et minuteries sont désormais normalisés par `dt` — le jeu tourne à la même vitesse réelle sur un écran 60Hz, 90Hz ou 120Hz (avant, tout était plus rapide sur un écran à taux de rafraîchissement élevé)
+- **Pause en arrière-plan** : la boucle de jeu s'interrompt quand l'app est masquée (économie de batterie, évite un bond de temps au retour)
+- **Bouton retour Android** : géré via `@capacitor/app` — demande confirmation avant de quitter au lieu de fermer l'app instantanément
+
+## Ce qui reste ouvert (nécessite votre confirmation ou vos assets)
+
+- Confirmer que le workflow GitHub Actions compile bien un APK fonctionnel
+- Icône et splash screen personnalisés (utilise les valeurs par défaut de Capacitor pour l'instant)
+- Build **release** signé avec votre propre clé, nécessaire pour toute publication (Play Store ou distribution large) — l'APK actuel est un build debug, adapté aux tests uniquement
+- Différenciation visuelle des unités (les castes existent déjà dans `reference/`, pas encore utilisées dans le jeu)
+- Condition de victoire/défaite
+
 ## Prochaines étapes envisagées
 
 - Différencier visuellement les unités (soldat vs ouvrière au combat)

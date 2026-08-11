@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>FourmiRA — Prototype RTS</title>
 <style>
   html, body {
@@ -11,18 +12,53 @@
     overflow: hidden;
     user-select: none;
   }
-  #hud {
-    position: absolute; top: 10px; left: 10px;
+  #hud b { color: #ffd27a; }
+  #selection-info {
+    position: absolute; bottom: 10px; left: 10px;
     background: rgba(0,0,0,0.6);
-    padding: 10px 14px;
+    padding: 8px 14px;
     border-radius: 8px;
     color: #f0e0c0;
     font-size: 13px;
     z-index: 10;
-    max-width: 300px;
-    line-height: 1.5;
   }
-  #hud b { color: #ffd27a; }
+  #barre-haut {
+    position: absolute; top: 10px; left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+  }
+  #compteur-badge {
+    background: rgba(0,0,0,0.6);
+    padding: 6px 12px;
+    border-radius: 8px;
+    color: #f0e0c0;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  #btn-aide {
+    background: rgba(0,0,0,0.6);
+    color: #f0e0c0;
+    border: 1px solid #8a6535;
+    border-radius: 50%;
+    width: 30px; height: 30px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #panneau-aide {
+    position: absolute; top: 50px; left: 10px;
+    background: rgba(0,0,0,0.85);
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #f0e0c0;
+    font-size: 12.5px;
+    z-index: 10;
+    max-width: 270px;
+    line-height: 1.5;
+    display: none;
+  }
+  #panneau-aide.visible { display: block; }
   #selection-info {
     position: absolute; bottom: 10px; left: 10px;
     background: rgba(0,0,0,0.6);
@@ -35,10 +71,10 @@
   #panneau-construction {
     position: absolute; top: 10px; right: 10px;
     background: rgba(0,0,0,0.6);
-    padding: 10px 14px;
+    padding: 8px 10px;
     border-radius: 8px;
     color: #f0e0c0;
-    font-size: 13px;
+    font-size: 12px;
     z-index: 10;
   }
   #panneau-construction button {
@@ -48,10 +84,9 @@
     color: #f0e0c0;
     border: 1px solid #8a6535;
     border-radius: 5px;
-    padding: 8px 10px;
-    margin-top: 6px;
+    padding: 6px 8px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
   }
   #panneau-construction button:active { background: #7a5228; }
   #panneau-construction button.actif { outline: 2px solid #3ae03a; }
@@ -68,34 +103,51 @@
     opacity: 0;
     transition: opacity 0.3s;
   }
+  #minicarte {
+    position: absolute; bottom: 10px; right: 10px;
+    background: #0a0805;
+    border: 2px solid #8a6535;
+    border-radius: 6px;
+    z-index: 10;
+    cursor: pointer;
+    touch-action: none;
+  }
   canvas { display: block; cursor: crosshair; touch-action: none; }
 </style>
 </head>
 <body>
 
-<div id="hud">
-  <b>Prototype RTS — FourmiRA</b><br>
-  Clic gauche / toucher : sélectionner (glisser pour une sélection multiple)<br>
-  Clic droit (souris) ou toucher le sol (tactile, fourmis sélectionnées) : déplacer<br>
-  Toucher/cliquer une ressource verte (fourmis sélectionnées) : récolter en boucle<br>
-  Panneau de droite : construire une Chambre (produit des ouvrières)<br>
-  ⚔️ Une colonie ennemie attaque depuis le sud-est — défendez vos fourmis !<br>
-  Flèches / ZQSD (clavier) ou glisser à deux doigts (tactile) : faire défiler la carte<br>
-  🌿 Nourriture au nid : <span id="compteur-nourriture">0</span>
+<div id="barre-haut">
+  <div id="compteur-badge">🌿 <span id="compteur-nourriture">0</span></div>
+  <button id="btn-aide">?</button>
+</div>
+<div id="panneau-aide">
+  <b>Comment jouer</b><br>
+  Toucher/cliquer : sélectionner (glisser = sélection multiple)<br>
+  Clic droit ou tap sur le sol : déplacer<br>
+  Tap sur une ressource verte : récolter en boucle<br>
+  Panneau de droite : construire<br>
+  Glisser à deux doigts (ou flèches/ZQSD) : faire défiler la carte<br>
+  Mini-carte en bas à droite : cliquer pour s'y rendre
 </div>
 <div id="panneau-construction">
   <b>Construction</b>
-  <button id="btn-construire-chambre">Chambre (150 🌿)<br><small>Produit des ouvrières</small></button>
+  <button id="btn-construire-chambre">Chambre (150 🌿)</button>
 </div>
 <div id="message-jeu"></div>
 <div id="selection-info">
   <span id="selection-text">Aucune fourmi sélectionnée</span>
   <button id="btn-stop" style="margin-left:10px;background:#5a3d1e;color:#f0e0c0;border:1px solid #8a6535;border-radius:5px;padding:3px 10px;cursor:pointer;">Stop</button>
 </div>
+<canvas id="minicarte" width="180" height="120"></canvas>
 
 <canvas id="game"></canvas>
 
 <script>
+document.getElementById('btn-aide').addEventListener('click', () => {
+  document.getElementById('panneau-aide').classList.toggle('visible');
+});
+
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const selInfo = document.getElementById('selection-info');
@@ -107,24 +159,83 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) dernierTemps = performance.now();
+});
+
 // ---------------------------------------------------------
-// CARTE
+// INTÉGRATION ANDROID (Capacitor) : bouton retour physique
+// ---------------------------------------------------------
+// Ce bloc ne fait rien dans un navigateur classique (window.Capacitor
+// n'existe pas). Dans l'app Android empaquetée, le bouton retour
+// physique/geste système fermerait sinon l'app instantanément sans
+// prévenir — on demande une confirmation à la place.
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+  window.Capacitor.Plugins.App.addListener('backButton', () => {
+    if (confirm('Quitter Fourmizred ?')) {
+      window.Capacitor.Plugins.App.exitApp();
+    }
+  });
+}
+
+// ---------------------------------------------------------
+// EXPLORATION — mémorise les zones découvertes, pour la mini-carte
 // ---------------------------------------------------------
 const MAP_W = 3000;
 const MAP_H = 2000;
+
+// ---------------------------------------------------------
+// EXPLORATION — mémorise les zones découvertes, pour la mini-carte
+// ---------------------------------------------------------
+const TAILLE_CELLULE = 100;
+const GRILLE_COLS = Math.ceil(MAP_W / TAILLE_CELLULE);
+const GRILLE_ROWS = Math.ceil(MAP_H / TAILLE_CELLULE);
+const grilleExploree = new Uint8Array(GRILLE_COLS * GRILLE_ROWS);
+
+function celluleExploree(worldX, worldY) {
+  const cx = Math.max(0, Math.min(GRILLE_COLS - 1, Math.floor(worldX / TAILLE_CELLULE)));
+  const cy = Math.max(0, Math.min(GRILLE_ROWS - 1, Math.floor(worldY / TAILLE_CELLULE)));
+  return grilleExploree[cy * GRILLE_COLS + cx] === 1;
+}
+
+function reveler(worldX, worldY, rayon) {
+  const c0 = Math.max(0, Math.floor((worldX - rayon) / TAILLE_CELLULE));
+  const c1 = Math.min(GRILLE_COLS - 1, Math.floor((worldX + rayon) / TAILLE_CELLULE));
+  const r0 = Math.max(0, Math.floor((worldY - rayon) / TAILLE_CELLULE));
+  const r1 = Math.min(GRILLE_ROWS - 1, Math.floor((worldY + rayon) / TAILLE_CELLULE));
+  for (let ry = r0; ry <= r1; ry++) {
+    for (let rx = c0; rx <= c1; rx++) {
+      grilleExploree[ry * GRILLE_COLS + rx] = 1;
+    }
+  }
+}
 let camX = MAP_W / 2 - canvas.width / 2;
 let camY = MAP_H / 2 - canvas.height / 2;
 const camSpeed = 12;
+
+// deltaTime : normalise la vitesse du jeu quel que soit le taux de
+// rafraîchissement de l'écran (60Hz, 90Hz, 120Hz...). dt = 1 correspond
+// à une frame de référence à 60 images/seconde.
+let dt = 1;
+let dernierTemps = performance.now();
+
+function majDeltaTime() {
+  const maintenant = performance.now();
+  dt = (maintenant - dernierTemps) / (1000 / 60);
+  dt = Math.max(0, Math.min(dt, 3)); // borne pour éviter un bond après une pause/mise en arrière-plan
+  dernierTemps = maintenant;
+}
 
 const touches = {};
 window.addEventListener('keydown', e => touches[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', e => touches[e.key.toLowerCase()] = false);
 
 function updateCamera() {
-  if (touches['arrowup'] || touches['z']) camY -= camSpeed;
-  if (touches['arrowdown'] || touches['s']) camY += camSpeed;
-  if (touches['arrowleft'] || touches['q']) camX -= camSpeed;
-  if (touches['arrowright'] || touches['d']) camX += camSpeed;
+  const v = camSpeed * dt;
+  if (touches['arrowup'] || touches['z']) camY -= v;
+  if (touches['arrowdown'] || touches['s']) camY += v;
+  if (touches['arrowleft'] || touches['q']) camX -= v;
+  if (touches['arrowright'] || touches['d']) camX += v;
   camX = Math.max(0, Math.min(MAP_W - canvas.width, camX));
   camY = Math.max(0, Math.min(MAP_H - canvas.height, camY));
 }
@@ -204,6 +315,7 @@ function placerBatiment(type, worldX, worldY) {
 
 // Le nid de départ
 const nid = { x: MAP_W / 2, y: MAP_H / 2 };
+reveler(nid.x, nid.y, 350);
 
 function dessinerTerrain(ctx) {
   ctx.fillStyle = '#d9c199';
@@ -339,7 +451,7 @@ class Fourmi {
         this.cible = null;
       } else {
         this.angle = Math.atan2(dy, dx);
-        const v = Math.min(this.vitesseMax, dist);
+        const v = Math.min(this.vitesseMax * dt, dist);
         this.x += Math.cos(this.angle) * v;
         this.y += Math.sin(this.angle) * v;
         this.phase += v * 0.5;
@@ -357,7 +469,7 @@ class Fourmi {
       this.etat = 'recolte';
       this.minuteur = 60; // ~1s de récolte sur place
     } else if (this.etat === 'recolte') {
-      this.minuteur--;
+      this.minuteur -= dt;
       if (this.minuteur <= 0) {
         const r = this.ressourceCible;
         if (r) {
@@ -372,7 +484,7 @@ class Fourmi {
       this.etat = 'depose';
       this.minuteur = 20; // petite pause de déchargement
     } else if (this.etat === 'depose') {
-      this.minuteur--;
+      this.minuteur -= dt;
       if (this.minuteur <= 0) {
         nourritureAuNid += this.cargo;
         document.getElementById('compteur-nourriture').textContent = nourritureAuNid;
@@ -515,8 +627,8 @@ function ecarterEnnemiAI() {
 }
 
 function resoudreCombats() {
-  for (const f of fourmis) if (f.minuteurAttaque > 0) f.minuteurAttaque--;
-  for (const e of ennemis) if (e.minuteurAttaque > 0) e.minuteurAttaque--;
+  for (const f of fourmis) if (f.minuteurAttaque > 0) f.minuteurAttaque -= dt;
+  for (const e of ennemis) if (e.minuteurAttaque > 0) e.minuteurAttaque -= dt;
 
   for (const f of fourmis) {
     if (f.hp <= 0) continue;
@@ -705,14 +817,103 @@ canvas.addEventListener('pointerup', finPointeur);
 canvas.addEventListener('pointercancel', finPointeur);
 
 // ---------------------------------------------------------
+// MINI-CARTE — zones explorées, fourmis, ennemis au contact
+// ---------------------------------------------------------
+const minicarte = document.getElementById('minicarte');
+const ctxMini = minicarte.getContext('2d');
+const ECHELLE_MINI_X = minicarte.width / MAP_W;
+const ECHELLE_MINI_Y = minicarte.height / MAP_H;
+const RAYON_DETECTION_MINICARTE = 160; // un ennemi n'apparaît que s'il est proche d'une fourmi
+
+function dessinerMinicarte() {
+  ctxMini.fillStyle = '#0a0805';
+  ctxMini.fillRect(0, 0, minicarte.width, minicarte.height);
+
+  // Zones explorées
+  ctxMini.fillStyle = '#6b5738';
+  for (let ry = 0; ry < GRILLE_ROWS; ry++) {
+    for (let rx = 0; rx < GRILLE_COLS; rx++) {
+      if (grilleExploree[ry * GRILLE_COLS + rx] === 1) {
+        ctxMini.fillRect(
+          rx * TAILLE_CELLULE * ECHELLE_MINI_X,
+          ry * TAILLE_CELLULE * ECHELLE_MINI_Y,
+          TAILLE_CELLULE * ECHELLE_MINI_X + 1,
+          TAILLE_CELLULE * ECHELLE_MINI_Y + 1
+        );
+      }
+    }
+  }
+
+  // Nid joueur
+  ctxMini.fillStyle = '#f0e0c0';
+  ctxMini.beginPath();
+  ctxMini.arc(nid.x * ECHELLE_MINI_X, nid.y * ECHELLE_MINI_Y, 4, 0, Math.PI * 2);
+  ctxMini.fill();
+
+  // Nid ennemi, seulement s'il a été découvert
+  if (celluleExploree(nidEnnemi.x, nidEnnemi.y)) {
+    ctxMini.fillStyle = '#e05050';
+    ctxMini.beginPath();
+    ctxMini.arc(nidEnnemi.x * ECHELLE_MINI_X, nidEnnemi.y * ECHELLE_MINI_Y, 4, 0, Math.PI * 2);
+    ctxMini.fill();
+  }
+
+  // Fourmis joueur (toujours visibles)
+  ctxMini.fillStyle = '#3ae03a';
+  for (const f of fourmis) {
+    ctxMini.fillRect(f.x * ECHELLE_MINI_X - 1, f.y * ECHELLE_MINI_Y - 1, 2, 2);
+  }
+
+  // Ennemis, seulement au contact direct d'une fourmi joueur
+  ctxMini.fillStyle = '#e03a3a';
+  for (const e of ennemis) {
+    let proche = false;
+    for (const f of fourmis) {
+      if (Math.hypot(f.x - e.x, f.y - e.y) < RAYON_DETECTION_MINICARTE) { proche = true; break; }
+    }
+    if (proche) ctxMini.fillRect(e.x * ECHELLE_MINI_X - 1, e.y * ECHELLE_MINI_Y - 1, 2, 2);
+  }
+
+  // Rectangle représentant la vue caméra actuelle
+  ctxMini.strokeStyle = 'rgba(255,255,255,0.8)';
+  ctxMini.lineWidth = 1;
+  ctxMini.strokeRect(
+    camX * ECHELLE_MINI_X, camY * ECHELLE_MINI_Y,
+    canvas.width * ECHELLE_MINI_X, canvas.height * ECHELLE_MINI_Y
+  );
+}
+
+function recentrerDepuisMinicarte(clientX, clientY) {
+  const rect = minicarte.getBoundingClientRect();
+  const worldX = (clientX - rect.left) / ECHELLE_MINI_X;
+  const worldY = (clientY - rect.top) / ECHELLE_MINI_Y;
+  camX = Math.max(0, Math.min(MAP_W - canvas.width, worldX - canvas.width / 2));
+  camY = Math.max(0, Math.min(MAP_H - canvas.height, worldY - canvas.height / 2));
+}
+
+minicarte.addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  recentrerDepuisMinicarte(e.clientX, e.clientY);
+});
+
+// ---------------------------------------------------------
 // BOUCLE PRINCIPALE
 // ---------------------------------------------------------
 function loop() {
+  // Si l'app est en arrière-plan (onglet caché ou app Android minimisée),
+  // on ne fait ni calcul ni rendu — économise la batterie et évite un
+  // bond de deltaTime au retour au premier plan.
+  if (document.hidden) {
+    requestAnimationFrame(loop);
+    return;
+  }
+
+  majDeltaTime();
   updateCamera();
   dessinerTerrain(ctx);
 
   // Apparition périodique des ennemis
-  minuteurSpawnEnnemi--;
+  minuteurSpawnEnnemi -= dt;
   if (minuteurSpawnEnnemi <= 0 && ennemis.length < MAX_ENNEMIS) {
     const angle = Math.random() * Math.PI * 2;
     ennemis.push(new Fourmi(
@@ -728,7 +929,7 @@ function loop() {
   // Production des bâtiments
   for (const b of batiments) {
     const def = TYPES_BATIMENT[b.type];
-    b.minuteurProduction--;
+    b.minuteurProduction -= dt;
     if (b.minuteurProduction <= 0) {
       if (nourritureAuNid >= def.coutProduction) {
         nourritureAuNid -= def.coutProduction;
@@ -747,12 +948,15 @@ function loop() {
   for (const f of fourmis) {
     f.update();
     f.draw(ctx, camX, camY);
+    reveler(f.x, f.y, 130);
   }
 
   for (const e of ennemis) {
     e.update();
     e.draw(ctx, camX, camY);
   }
+
+  dessinerMinicarte();
 
   // Rectangle de sélection en cours
   if (selectionEnCours) {
