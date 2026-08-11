@@ -5,6 +5,27 @@ colonie de fourmis. Développé en HTML5/Canvas/JavaScript pur pour
 rester jouable aussi bien sur navigateur desktop que sur mobile,
 et empaqueté en application Android via Capacitor.
 
+## Architecture du code
+
+Le jeu est découpé en modules pour rester maintenable et pour que le
+navigateur (ou la WebView Android) puisse mettre en cache chaque
+fichier indépendamment :
+
+```
+index.html          squelette HTML, charge les modules dans l'ordre
+css/style.css        toute la mise en forme
+js/utils.js          fonctions utilitaires partagées
+js/etat.js            état global, caméra, deltaTime, grille d'exploration
+js/terrain.js         génération et rendu du sol, nids, ressources
+js/fourmi.js          classe Fourmi (ouvrière/soldat, récolte, combat)
+js/insectes.js        faune d'ambiance décorative (pucerons, coccinelles, scarabées)
+js/combat.js          IA ennemie et résolution des accrochages
+js/batiments.js       construction, production, boutons
+js/minicarte.js       rendu et interaction de la mini-carte
+js/input.js           souris/tactile/clavier, aide, bouton retour Android
+js/main.js            peuplement initial et boucle de jeu
+```
+
 ## État actuel
 
 `index.html` est le prototype jouable (aucune dépendance, aucune
@@ -23,6 +44,16 @@ installation nécessaire — ouvrez-le simplement dans un navigateur) :
   unités les plus proches ; vos fourmis se défendent
   automatiquement au contact. Barres de vie visibles dès qu'une
   fourmi est blessée.
+- **Deux unités distinctes** : l'Ouvrière (récolte) et le Soldat
+  (mandibules en crochet, plus de PV/dégâts, ne récolte pas)
+- **Habillage visuel** : terrain en plusieurs couches (taches de sol,
+  cailloux, brins d'herbe, chemin de terre battue autour du nid),
+  ressources en amas de champignons, nids et bâtiments avec un léger
+  dégradé pour le relief, ombres portées sous les fourmis, variation
+  de teinte individuelle pour éviter l'effet "copier-coller"
+- **Faune d'ambiance** (purement décorative, sans effet de
+  gameplay) : colonies de pucerons près de certaines ressources,
+  coccinelles et scarabées qui errent lentement sur la carte
 
 `reference/modele-fourmi-castes.html` est une démo séparée montrant
 les différentes castes de fourmis dessinées (ouvrière, soldat,
