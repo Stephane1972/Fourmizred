@@ -152,6 +152,33 @@ la classe CSS `saisie` pendant un glissement.
 
 ---
 
+## État du projet — VAGUE 4 terminée
+
+Les ressources récoltables sont désormais visibles sur la carte.
+
+### Ce qui a été ajouté
+
+- `js/resources.js` — génère des nœuds de **nourriture** (amas de
+  graines), **eau** (points d'eau) et **matériaux** (brindilles),
+  répartis sur la carte en évitant la zone immédiate de la
+  fourmilière ; chaque type a son propre rendu
+- `js/renderer.js` — dessine les nœuds (avec culling comme le reste
+  du terrain), et affiche le stock actuel de `etat.ressources` dans
+  le panneau de diagnostic temporaire (🌾💧🪵👥)
+
+Pas encore de récolte réelle : les nœuds sont posés et affichés, mais
+rien ne vient encore y prélever — ça arrivera avec `units.js`.
+
+### Vérifications effectuées
+
+Testé avec un vrai DOM simulé : nœuds générés pour les 3 types (leur
+nombre s'adapte correctement à la taille réelle de la carte), aucun
+nœud à l'intérieur de la zone protégée autour de la fourmilière, aucun
+nœud en dehors des limites de la carte, et le rendu de chaque type
+(nourriture/eau/matériaux) ne produit aucune erreur.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

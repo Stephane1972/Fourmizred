@@ -180,6 +180,11 @@ function rendreScene(temps) {
   ctx.lineWidth = 4 / etat.camera.zoom;
   ctx.strokeRect(0, 0, etat.carte.largeur, etat.carte.hauteur);
 
+  for (const noeud of noeudsRessource) {
+    if (noeud.x < zone.x1 || noeud.x > zone.x2 || noeud.y < zone.y1 || noeud.y > zone.y2) continue;
+    dessinerNoeudRessource(ctx, noeud);
+  }
+
   dessinerFourmiliere(ctx, temps);
   mettreAJourEtDessinerRetoursTactiles(ctx, temps.delta);
 
@@ -192,12 +197,19 @@ function rendreScene(temps) {
 // caché derrière une option une fois l'interface réelle (ui.js) en place.
 function dessinerSurcoucheDebug(temps) {
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(8, canvas.height - 44, 260, 36);
+  ctx.fillRect(8, canvas.height - 66, 300, 58);
   ctx.fillStyle = '#f0e0c0';
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.fillText(
     `cam x:${Math.round(etat.camera.x)} y:${Math.round(etat.camera.y)} zoom:${etat.camera.zoom.toFixed(2)} · t:${temps.total.toFixed(1)}s`,
+    16, canvas.height - 44
+  );
+  // Stock de ressources — provisoire, remplacé par une vraie barre
+  // d'interface (ui.js) à une prochaine vague.
+  const r = etat.ressources;
+  ctx.fillText(
+    `🌾${formaterNombre(r.nourriture)}  💧${formaterNombre(r.eau)}  🪵${formaterNombre(r.materiaux)}  👥${r.population}/${r.populationMax}`,
     16, canvas.height - 22
   );
 }

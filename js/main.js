@@ -125,6 +125,7 @@ function boucle(horodatageActuel) {
 enregistrerServiceWorker();
 majStatutReseau();
 genererTerrain();
+genererRessources();
 initialiserInput();
 requestAnimationFrame(boucle);
 
