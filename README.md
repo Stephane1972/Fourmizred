@@ -12,42 +12,45 @@ Android, ou packageable en APK.
 
 ---
 
-## État du projet — VAGUE 1 terminée
+## État du projet — VAGUE 2 terminée
 
-Cette première vague pose uniquement le **socle technique** : aucune
-mécanique de jeu (bâtiments, unités, combat...) n'est encore implémentée.
-L'objectif était de garantir que l'architecture de base — structure
-multi-fichiers, installation PWA, fonctionnement hors ligne — est saine
-avant de construire le jeu par-dessus.
+La vague 1 posait le socle hors-ligne/PWA. Cette vague 2 ajoute le
+**cœur du moteur** : une caméra pilotable (glisser pour déplacer,
+molette ou pincement à deux doigts pour zoomer), sur une carte de
+4000×3000 avec grille de repérage. Toujours aucun bâtiment/unité —
+c'est la vague suivante.
 
-### Ce qui a été fait
+### Ce qui a été ajouté
 
-- Arborescence complète du projet (`css/`, `js/`, `assets/`, `android/`)
-- `index.html` — squelette HTML, aucune logique de jeu inline
-- `offline.html` — page de repli propre si une navigation échoue hors ligne
-- `manifest.webmanifest` — PWA installable, icônes incluses (192px et 512px)
-- `sw.js` — Service Worker : précache tous les fichiers du socle,
-  cache versionné, nettoyage automatique des anciens caches, stratégie
-  cache-d'abord avec repli réseau, repli sur `offline.html` en cas
-  d'échec de navigation
-- `css/reset.css`, `css/style.css`, `css/mobile.css` — identité visuelle
-  de base, écran de chargement, indicateur en ligne/hors ligne
-- `js/config.js` — constantes globales, dont **`BASE_PATH`**
-- `js/utils.js` — fonctions utilitaires génériques
-- `js/main.js` — enregistrement du Service Worker, écran de chargement,
-  indicateur réseau, et un rendu canvas minimal (juste pour valider que
-  toute la chaîne HTML→CSS→JS→Canvas fonctionne)
+- `js/state.js` — état centralisé du jeu (`etat`), avec les structures
+  de données déjà prévues pour ressources/bâtiments/unités/technologies
+  (vides pour l'instant, remplies aux prochaines vagues)
+- `js/camera.js` — déplacement, zoom borné (0.4× à 2.5×), conversions
+  écran↔monde, clampage aux limites de la carte
+- `js/input.js` — Pointer Events unifiés souris/tactile : glisser à un
+  doigt pour déplacer, pincer à deux doigts ou molette pour zoomer
+- `js/renderer.js` — dessine le sol, une grille de repérage, les
+  bordures de la carte, et un petit panneau de diagnostic (position/zoom
+  caméra) en bas à gauche — utile pendant les tests, sera caché ou
+  retiré une fois `ui.js` en place
+- `js/main.js` s'est allégé : ne garde que l'enregistrement du Service
+  Worker, l'écran de chargement, le statut réseau, et le démarrage de
+  la boucle
 
-### Ce qui n'existe pas encore (prochaines vagues)
+### Vérifications effectuées
 
-`state.js`, `storage.js`, `renderer.js`, `input.js`, `camera.js`,
-`resources.js`, `buildings.js`, `units.js`, `combat.js`, `ai.js`,
-`missions.js`, `research.js`, `ui.js`, `css/menu.css`,
-`android/README-APK.md` — tout le vrai jeu, en somme. Le canvas
-n'affiche pour l'instant qu'un écran de validation (titre + numéro de
-version), pas encore la colonie.
+Testé avec un vrai DOM simulé et des événements Pointer/Wheel réels
+(pas juste une vérification de syntaxe) :
+- glissement caméra → déplacement cohérent dans la bonne direction
+- molette → zoom fonctionnel
+- tentative de sortie des limites de la carte → correctement clampée
+
+`storage.js` (sauvegarde/chargement) arrivera à la vague 3, une fois
+qu'il y aura une progression réelle à sauvegarder.
 
 ---
+
+
 
 ## ⚠️ Configuration obligatoire avant publication : `BASE_PATH`
 
@@ -115,4 +118,6 @@ Pour tester correctement en local :
 
 ## Prochaine étape
 
-En attente de validation avant de démarrer la **VAGUE 2**.
+En attente de validation avant de démarrer la **VAGUE 3** (prévue :
+`resources.js` + `buildings.js` + `storage.js` — les premières
+ressources récoltables, le premier bâtiment posable, et la sauvegarde).

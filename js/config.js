@@ -8,8 +8,8 @@
 // - Si le jeu est publié à la racine d'un domaine ou d'un compte
 //   GitHub (ex: https://votre-compte.github.io/), laissez "/".
 // - Si le jeu est publié comme "project site" (ex:
-//   https://votre-compte.github.io/Fourmizred/), la valeur doit
-//   être "/Fourmizred/" (le nom EXACT du dépôt, avec un / au
+//   https://votre-compte.github.io/), la valeur doit
+//   être "/" (le nom EXACT du dépôt, avec un / au
 //   début ET à la fin).
 //
 // Cette constante est utilisée par sw.js (enregistrement et chemins

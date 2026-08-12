@@ -1,16 +1,14 @@
 // ===========================================================
-// MAIN — point d'entrée de l'application.
+// MAIN — point d'entrée de l'application : orchestration générale.
 //
-// À ce stade (vague 1), ce fichier gère :
-//   - l'enregistrement du service worker (fonctionnement hors ligne)
-//   - l'écran de chargement
-//   - l'indicateur en ligne / hors ligne
-//   - un rendu minimal du canevas, pour valider que tout le pipeline
-//     (HTML → CSS → JS → Canvas) fonctionne correctement
+// La logique concrète vit désormais dans des modules dédiés :
+//   - state.js     : état centralisé du jeu
+//   - camera.js    : déplacement/zoom de la caméra
+//   - input.js     : entrées souris/tactile
+//   - renderer.js  : dessin de la scène
 //
-// Le vrai moteur de jeu (renderer.js, camera.js, input.js, state.js...)
-// sera ajouté dans les prochaines vagues. main.js s'allégera alors
-// pour ne garder que l'orchestration générale.
+// main.js ne garde que ce qui ne rentre nulle part ailleurs :
+// démarrage, écran de chargement, statut réseau, Service Worker.
 // ===========================================================
 
 // ---------------------------------------------------------
@@ -21,9 +19,6 @@ function enregistrerServiceWorker() {
     console.warn('Service Worker non supporté par ce navigateur.');
     return;
   }
-  // Les service workers ne fonctionnent pas sous file:// — c'est une
-  // restriction du navigateur, pas un bug du projet. Voir le README
-  // pour tester en local avec un petit serveur HTTP.
   if (location.protocol === 'file:') {
     console.warn('Service Worker désactivé : la page est ouverte en file://. Utilisez un serveur local pour tester le mode hors ligne.');
     return;
@@ -47,8 +42,6 @@ function majStatutReseau() {
   if (navigator.onLine) {
     badge.classList.remove('hors-ligne');
     texte.textContent = 'En ligne';
-    // Le jeu étant hors-ligne par conception, on estompe le badge
-    // après un court instant pour ne pas encombrer l'écran.
     clearTimeout(majStatutReseau._t);
     majStatutReseau._t = setTimeout(() => badge.classList.add('discret'), 2500);
   } else {
@@ -70,8 +63,7 @@ function masquerEcranChargement() {
 }
 
 // ---------------------------------------------------------
-// CANEVAS — rendu minimal de validation (sera remplacé par
-// renderer.js dans une prochaine vague)
+// CANEVAS
 // ---------------------------------------------------------
 const canvas = document.getElementById('canvas-jeu');
 const ctx = canvas.getContext('2d');
@@ -83,33 +75,11 @@ function redimensionnerCanvas() {
 window.addEventListener('resize', redimensionnerCanvas);
 redimensionnerCanvas();
 
-function rendreEcranValidation() {
-  ctx.fillStyle = PALETTE.sol;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = 'rgba(0,0,0,0.06)';
-  const taille = 48;
-  for (let x = 0; x < canvas.width; x += taille) {
-    for (let y = 0; y < canvas.height; y += taille) {
-      if (((x / taille) + (y / taille)) % 2 === 0) {
-        ctx.fillRect(x, y, taille, taille);
-      }
-    }
-  }
-
-  ctx.fillStyle = '#3a2818';
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 22px Arial';
-  ctx.fillText(NOM_JEU, canvas.width / 2, canvas.height / 2 - 10);
-  ctx.font = '14px Arial';
-  ctx.fillText(SOUS_TITRE_JEU, canvas.width / 2, canvas.height / 2 + 16);
-  ctx.font = '12px Arial';
-  ctx.fillStyle = 'rgba(58,40,24,0.6)';
-  ctx.fillText('Socle technique v' + VERSION_JEU + ' — moteur de jeu à venir', canvas.width / 2, canvas.height / 2 + 40);
-}
-
+// ---------------------------------------------------------
+// BOUCLE PRINCIPALE
+// ---------------------------------------------------------
 function boucle() {
-  rendreEcranValidation();
+  rendreScene();
   requestAnimationFrame(boucle);
 }
 
@@ -118,8 +88,7 @@ function boucle() {
 // ---------------------------------------------------------
 enregistrerServiceWorker();
 majStatutReseau();
+initialiserInput();
 boucle();
 
-// Petit délai volontaire avant de masquer l'écran de chargement,
-// pour éviter un flash trop brutal même quand tout charge très vite.
 setTimeout(masquerEcranChargement, 400);

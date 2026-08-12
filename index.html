@@ -32,9 +32,17 @@
 
 <canvas id="canvas-jeu"></canvas>
 
-<!-- L'ordre de chargement est important : config puis utils avant main -->
+<!-- Ordre important : config/utils/state d'abord (aucun appel de fonction
+     immédiat), puis camera/input/renderer (définissent des fonctions
+     utilisées par main.js), et main.js en dernier car il orchestre tout
+     le reste dès son chargement (enregistrerServiceWorker(), initialiserInput(),
+     boucle() sont appelés immédiatement) -->
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/state.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/input.js"></script>
+<script src="js/renderer.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

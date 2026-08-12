@@ -19,7 +19,7 @@ const BASE_PATH = "/Fourmizred/";
 // Nom de cache versionné : changez ce numéro à chaque mise à jour
 // des fichiers précachés pour que les anciens visiteurs récupèrent
 // la nouvelle version au lieu de rester bloqués sur un cache périmé.
-const CACHE_NAME = "ant-commander-cache-v1";
+const CACHE_NAME = "ant-commander-cache-v2";
 
 // Liste de tout ce qui doit être disponible hors ligne. Les chemins
 // sont exprimés relativement à BASE_PATH, jamais en absolu codé en
@@ -34,6 +34,10 @@ const FICHIERS_A_PRECACHER = [
   "css/mobile.css",
   "js/config.js",
   "js/utils.js",
+  "js/state.js",
+  "js/camera.js",
+  "js/input.js",
+  "js/renderer.js",
   "js/main.js",
   "assets/icons/icon-192.png",
   "assets/icons/icon-512.png"
