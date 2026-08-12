@@ -1,0 +1,35 @@
+/* ===========================================================
+   MOBILE — ajustements tactiles et responsive.
+   Volontairement léger à ce stade (vague 1 = pas encore d'UI de jeu
+   à adapter). Sera enrichi aux prochaines vagues avec les menus de
+   construction/production/recherche, la mini-carte, le panneau
+   d'unité, etc.
+   =========================================================== */
+
+/* Respecte les zones sûres des écrans avec encoche/coins arrondis */
+#statut-reseau {
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+}
+
+/* Cibles tactiles plus généreuses dès qu'un pointeur grossier
+   (doigt) est détecté, plutôt que de cibler un simple seuil de
+   largeur d'écran — plus fiable sur tablette. */
+@media (pointer: coarse) {
+  button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Orientation paysage sur petit écran : l'écran de chargement reste
+   centré et lisible sans dépasser la hauteur visible */
+@media (max-height: 420px) and (orientation: landscape) {
+  #ecran-chargement img {
+    width: 56px;
+    height: 56px;
+  }
+  #ecran-chargement h1 {
+    font-size: 15px;
+  }
+}

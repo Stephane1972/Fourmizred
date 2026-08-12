@@ -1,111 +1,118 @@
-# Fourmizred
+# Ant Commander – La Guerre des Colonies
 
-Jeu de stratégie temps réel (RTS) façon Command & Conquer, avec une
-colonie de fourmis. Développé en HTML5/Canvas/JavaScript pur pour
-rester jouable aussi bien sur navigateur desktop que sur mobile,
-et empaqueté en application Android via Capacitor.
+Jeu de stratégie en temps réel (dans l'esprit général du genre popularisé
+par des jeux comme Command & Conquer, sans en reprendre aucun nom,
+personnage, image, musique ou code) où vous commandez une colonie de
+fourmis : récolte, construction, production, recherche, défense de la
+reine, combat contre des colonies rivales.
 
-## Architecture du code
+Conçu **offline-first** : après un premier chargement, le jeu fonctionne
+entièrement sans connexion, installable comme PWA sur ordinateur et sur
+Android, ou packageable en APK.
 
-Le jeu est découpé en modules pour rester maintenable et pour que le
-navigateur (ou la WebView Android) puisse mettre en cache chaque
-fichier indépendamment :
+---
 
-```
-index.html          squelette HTML, charge les modules dans l'ordre
-css/style.css        toute la mise en forme
-js/utils.js          fonctions utilitaires partagées
-js/etat.js            état global, caméra, deltaTime, grille d'exploration
-js/terrain.js         génération et rendu du sol, nids, ressources
-js/fourmi.js          classe Fourmi (ouvrière/soldat, récolte, combat)
-js/insectes.js        faune d'ambiance décorative (pucerons, coccinelles, scarabées)
-js/combat.js          IA ennemie et résolution des accrochages
-js/batiments.js       construction, production, boutons
-js/minicarte.js       rendu et interaction de la mini-carte
-js/input.js           souris/tactile/clavier, aide, bouton retour Android
-js/main.js            peuplement initial et boucle de jeu
-```
+## État du projet — VAGUE 1 terminée
 
-## État actuel
+Cette première vague pose uniquement le **socle technique** : aucune
+mécanique de jeu (bâtiments, unités, combat...) n'est encore implémentée.
+L'objectif était de garantir que l'architecture de base — structure
+multi-fichiers, installation PWA, fonctionnement hors ligne — est saine
+avant de construire le jeu par-dessus.
 
-`index.html` est le prototype jouable (aucune dépendance, aucune
-installation nécessaire — ouvrez-le simplement dans un navigateur) :
+### Ce qui a été fait
 
-- Carte scrollable (flèches/ZQSD au clavier, glisser à deux doigts
-  au tactile)
-- Sélection de fourmis (clic/tap simple, ou glisser pour une
-  sélection rectangulaire multiple)
-- Déplacement (clic droit à la souris, tap au tactile)
-- Récolte de nourriture en boucle automatique façon Harvester C&C
-- Construction : bâtiment "Chambre" (150 🌿) qui produit
-  automatiquement de nouvelles ouvrières
-- **Combat** : une colonie ennemie (nid au sud-est de la carte)
-  envoie régulièrement des fourmis qui repèrent et attaquent vos
-  unités les plus proches ; vos fourmis se défendent
-  automatiquement au contact. Barres de vie visibles dès qu'une
-  fourmi est blessée.
-- **Deux unités distinctes** : l'Ouvrière (récolte) et le Soldat
-  (mandibules en crochet, plus de PV/dégâts, ne récolte pas)
-- **Habillage visuel** : terrain en plusieurs couches (taches de sol,
-  cailloux, brins d'herbe, chemin de terre battue autour du nid),
-  ressources en amas de champignons, nids et bâtiments avec un léger
-  dégradé pour le relief, ombres portées sous les fourmis, variation
-  de teinte individuelle pour éviter l'effet "copier-coller"
-- **Faune d'ambiance** (purement décorative, sans effet de
-  gameplay) : colonies de pucerons près de certaines ressources,
-  coccinelles et scarabées qui errent lentement sur la carte
+- Arborescence complète du projet (`css/`, `js/`, `assets/`, `android/`)
+- `index.html` — squelette HTML, aucune logique de jeu inline
+- `offline.html` — page de repli propre si une navigation échoue hors ligne
+- `manifest.webmanifest` — PWA installable, icônes incluses (192px et 512px)
+- `sw.js` — Service Worker : précache tous les fichiers du socle,
+  cache versionné, nettoyage automatique des anciens caches, stratégie
+  cache-d'abord avec repli réseau, repli sur `offline.html` en cas
+  d'échec de navigation
+- `css/reset.css`, `css/style.css`, `css/mobile.css` — identité visuelle
+  de base, écran de chargement, indicateur en ligne/hors ligne
+- `js/config.js` — constantes globales, dont **`BASE_PATH`**
+- `js/utils.js` — fonctions utilitaires génériques
+- `js/main.js` — enregistrement du Service Worker, écran de chargement,
+  indicateur réseau, et un rendu canvas minimal (juste pour valider que
+  toute la chaîne HTML→CSS→JS→Canvas fonctionne)
 
-`reference/modele-fourmi-castes.html` est une démo séparée montrant
-les différentes castes de fourmis dessinées (ouvrière, soldat,
-soldat majeur, reine, nourrice, éclaireuse, mâle ailé) — sert de
-base visuelle pour de futures unités dédiées (actuellement toutes
-les unités du prototype sont visuellement identiques).
+### Ce qui n'existe pas encore (prochaines vagues)
 
-## Application Android
+`state.js`, `storage.js`, `renderer.js`, `input.js`, `camera.js`,
+`resources.js`, `buildings.js`, `units.js`, `combat.js`, `ai.js`,
+`missions.js`, `research.js`, `ui.js`, `css/menu.css`,
+`android/README-APK.md` — tout le vrai jeu, en somme. Le canvas
+n'affiche pour l'instant qu'un écran de validation (titre + numéro de
+version), pas encore la colonie.
 
-Le dépôt est configuré avec **Capacitor** pour empaqueter le jeu en
-véritable application Android, et un **workflow GitHub Actions**
-(`.github/workflows/build-android.yml`) qui compile automatiquement
-l'APK à chaque push sur `main` et le publie dans les **Releases**
-du dépôt GitHub.
+---
 
-**Pour récupérer l'APK** : onglet "Releases" du dépôt GitHub → la
-dernière release contient le fichier `.apk` à télécharger et
-installer directement sur votre téléphone Android (il faudra
-autoriser "sources inconnues"/"installer des apps inconnues" dans
-les réglages Android lors de la première installation, puisque
-l'app n'est pas distribuée par le Play Store).
+## ⚠️ Configuration obligatoire avant publication : `BASE_PATH`
 
-L'APK généré est un build **debug** (signé automatiquement avec une
-clé de développement) — suffisant pour tester et installer
-directement, mais pas pour publier sur le Play Store en l'état.
+Deux fichiers contiennent une constante `BASE_PATH` qui **doivent avoir
+exactement la même valeur** :
 
-## Corrections techniques appliquées
+- `js/config.js` (ligne ~20)
+- `sw.js` (ligne ~17, dupliquée volontairement car un Service Worker ne
+  peut pas importer facilement un fichier de config externe)
 
-- **Viewport mobile** : balise `<meta name="viewport">` ajoutée (manquait, pouvait fausser l'échelle/le tactile en WebView Android)
-- **deltaTime** : tous les déplacements et minuteries sont désormais normalisés par `dt` — le jeu tourne à la même vitesse réelle sur un écran 60Hz, 90Hz ou 120Hz (avant, tout était plus rapide sur un écran à taux de rafraîchissement élevé)
-- **Pause en arrière-plan** : la boucle de jeu s'interrompt quand l'app est masquée (économie de batterie, évite un bond de temps au retour)
-- **Bouton retour Android** : géré via `@capacitor/app` — demande confirmation avant de quitter au lieu de fermer l'app instantanément
+Valeur actuelle : `"/ant-commander/"` — cela suppose que le dépôt GitHub
+s'appelle **exactement** `ant-commander` et que le site est publié en
+tant que "project site" à une adresse du type :
+`https://votre-compte.github.io/ant-commander/`
 
-## Ce qui reste ouvert (nécessite votre confirmation ou vos assets)
+**Si votre dépôt porte un autre nom**, remplacez `/ant-commander/` par
+`/nom-exact-de-votre-depot/` dans les DEUX fichiers.
 
-- Confirmer que le workflow GitHub Actions compile bien un APK fonctionnel
-- Icône et splash screen personnalisés (utilise les valeurs par défaut de Capacitor pour l'instant)
-- Build **release** signé avec votre propre clé, nécessaire pour toute publication (Play Store ou distribution large) — l'APK actuel est un build debug, adapté aux tests uniquement
-- Différenciation visuelle des unités (les castes existent déjà dans `reference/`, pas encore utilisées dans le jeu)
-- Condition de victoire/défaite
+**Si vous publiez à la racine d'un domaine ou d'un compte GitHub**
+(`https://votre-compte.github.io/` directement, sans sous-dossier),
+mettez `BASE_PATH = "/"` dans les deux fichiers.
 
-## Prochaines étapes envisagées
+---
 
-- Différencier visuellement les unités (soldat vs ouvrière au combat)
-- Brouillard de guerre
-- Interface tactile pour choisir un type d'unité à produire
-- Son et musique
-- Build Android **release** signé, en vue d'une éventuelle
-  publication (Play Store "Limited Distribution" ou sideload direct)
+## Tester en local (avant de publier)
 
-## Lancer le prototype en local
+Les Service Workers ne fonctionnent **pas** en ouvrant `index.html`
+directement depuis l'explorateur de fichiers (protocole `file://`) —
+c'est une restriction de sécurité des navigateurs, pas un bug du projet.
+Le jeu s'affiche quand même, mais le mode hors ligne ne peut pas être
+testé de cette façon.
 
-Aucune installation : ouvrez `index.html` dans n'importe quel
-navigateur récent (desktop ou mobile).
+Pour tester correctement en local :
 
+1. Ouvrez un terminal dans le dossier du projet
+2. Lancez un petit serveur local, par exemple :
+   ```bash
+   python3 -m http.server 8080
+   ```
+3. **Temporairement**, mettez `BASE_PATH = "/"` dans `js/config.js` ET
+   `sw.js` (puisqu'en local le jeu est servi à la racine, pas dans un
+   sous-dossier)
+4. Ouvrez `http://localhost:8080/index.html`
+5. Ouvrez les DevTools → onglet **Application** (Chrome) ou
+   **Réseau/Storage** (Firefox) → vérifiez que le Service Worker est
+   "activated and running"
+6. Coupez le réseau (mode avion, ou DevTools → Network → Offline) et
+   rechargez la page : elle doit continuer à s'afficher
+7. **Remettez `BASE_PATH` à sa valeur GitHub Pages** avant de commiter
+
+## Tester sur GitHub Pages
+
+1. Poussez le projet sur un dépôt GitHub nommé exactement comme votre
+   `BASE_PATH` (ex: dépôt `ant-commander` → `BASE_PATH = "/ant-commander/"`)
+2. Repo → Settings → Pages → Source : branche `main`, dossier `/ (root)`
+3. Attendez quelques minutes, puis ouvrez
+   `https://votre-compte.github.io/ant-commander/`
+4. Vérifiez l'installation PWA (icône "Installer l'application" dans la
+   barre d'adresse sur desktop, ou "Ajouter à l'écran d'accueil" sur
+   Android)
+5. Une fois la page visitée au moins une fois, coupez le réseau et
+   rouvrez l'app : elle doit se lancer normalement
+
+---
+
+## Prochaine étape
+
+En attente de validation avant de démarrer la **VAGUE 2**.

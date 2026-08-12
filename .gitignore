@@ -1,16 +1,7 @@
-# Dépendances
-node_modules/
-
-# Assets web générés en CI à partir de index.html — pas la source
-www/
-
-# Projet Android généré par Capacitor (npx cap add android) — recréé à chaque build CI
-android/
-
-# Build Capacitor / Android
-dist/
-build/
-
 # Fichiers système
 .DS_Store
 Thumbs.db
+
+# Éditeurs
+.vscode/
+*.swp

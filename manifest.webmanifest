@@ -1,0 +1,39 @@
+{
+  "name": "Ant Commander – La Guerre des Colonies",
+  "short_name": "Ant Commander",
+  "description": "Jeu de stratégie en temps réel où vous commandez une colonie de fourmis : récoltez des ressources, construisez votre fourmilière, produisez des unités et défendez votre reine.",
+  "id": "ant-commander",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16110a",
+  "theme_color": "#3a2818",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

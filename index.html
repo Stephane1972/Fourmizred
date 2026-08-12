@@ -3,47 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Fourmizred</title>
+<title>Ant Commander – La Guerre des Colonies</title>
+<meta name="description" content="Jeu de stratégie en temps réel : commandez une colonie de fourmis, récoltez des ressources, construisez et défendez votre reine.">
+<meta name="theme-color" content="#3a2818">
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+
+<link rel="stylesheet" href="css/reset.css">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
 
-<div id="barre-haut">
-  <div id="compteur-badge">🌿 <span id="compteur-nourriture">0</span></div>
-  <button id="btn-aide">?</button>
+<!-- Écran de chargement, masqué dès que le jeu est prêt (voir main.js) -->
+<div id="ecran-chargement">
+  <img src="assets/icons/icon-192.png" alt="Ant Commander">
+  <h1>Ant Commander<br><small>La Guerre des Colonies</small></h1>
+  <p>Chargement...</p>
 </div>
-<div id="panneau-aide">
-  <b>Comment jouer</b><br>
-  Toucher/cliquer : sélectionner (glisser = sélection multiple)<br>
-  Clic droit ou tap sur le sol : déplacer<br>
-  Tap sur une ressource verte : récolter en boucle<br>
-  Panneau de droite : construire (Chambre = production auto d'ouvrières, Soldat = combat)<br>
-  Glisser à deux doigts (ou flèches/ZQSD) : faire défiler la carte<br>
-  Mini-carte en bas à droite : cliquer pour s'y rendre
-</div>
-<div id="panneau-construction">
-  <b>Construction</b>
-  <button id="btn-construire-chambre">Chambre (150 🌿)</button>
-  <button id="btn-produire-soldat">Soldat (80 🌿)</button>
-</div>
-<div id="message-jeu"></div>
-<div id="selection-info">
-  <span id="selection-text">Aucune fourmi sélectionnée</span>
-  <button id="btn-stop">Stop</button>
-</div>
-<canvas id="minicarte" width="180" height="120"></canvas>
 
-<canvas id="game"></canvas>
+<!-- Indicateur de connexion, mis à jour par main.js -->
+<div id="statut-reseau" class="hors-ligne">
+  <span class="pastille"></span>
+  <span id="statut-reseau-texte">Vérification...</span>
+</div>
 
+<canvas id="canvas-jeu"></canvas>
+
+<!-- L'ordre de chargement est important : config puis utils avant main -->
+<script src="js/config.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/etat.js"></script>
-<script src="js/terrain.js"></script>
-<script src="js/fourmi.js"></script>
-<script src="js/insectes.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/batiments.js"></script>
-<script src="js/minicarte.js"></script>
-<script src="js/input.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

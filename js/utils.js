@@ -1,32 +1,41 @@
 // ===========================================================
-// UTILS — petites fonctions partagées par tous les autres modules
+// UTILS — fonctions utilitaires génériques, indépendantes de
+// l'état du jeu. Peut être utilisé par n'importe quel autre module.
 // ===========================================================
 
-function afficherMessage(texte) {
-  const el = document.getElementById('message-jeu');
-  el.textContent = texte;
-  el.style.opacity = '1';
-  clearTimeout(afficherMessage._t);
-  afficherMessage._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+function clamp(valeur, min, max) {
+  return Math.max(min, Math.min(max, valeur));
 }
 
-function milieu(a, b) {
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+function lerp(a, b, t) {
+  return a + (b - a) * t;
 }
 
-// Éclaircit (delta > 0) ou assombrit (delta < 0) une couleur hexadécimale.
-// Utilisé pour donner à chaque fourmi/insecte une légère variation de
-// teinte individuelle, afin d'éviter l'effet "copier-coller" quand
-// plusieurs unités identiques sont regroupées à l'écran.
-function ajusterCouleur(hex, delta) {
-  const n = parseInt(hex.slice(1), 16);
-  let r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
-  r = Math.max(0, Math.min(255, r + delta));
-  g = Math.max(0, Math.min(255, g + delta));
-  b = Math.max(0, Math.min(255, b + delta));
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+function distance(x1, y1, x2, y2) {
+  return Math.hypot(x2 - x1, y2 - y1);
 }
 
 function nombreAleatoire(min, max) {
   return min + Math.random() * (max - min);
+}
+
+function entierAleatoire(min, max) {
+  return Math.floor(nombreAleatoire(min, max + 1));
+}
+
+function ajusterCouleur(hex, delta) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
+  r = clamp(r + delta, 0, 255);
+  g = clamp(g + delta, 0, 255);
+  b = clamp(b + delta, 0, 255);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+// Formate un grand nombre en chaîne lisible (ex: 12500 -> "12,5k"),
+// utile pour l'affichage des ressources dans la barre d'interface.
+function formaterNombre(n) {
+  if (n < 1000) return String(Math.floor(n));
+  if (n < 1000000) return (n / 1000).toFixed(1).replace('.0', '') + 'k';
+  return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
 }

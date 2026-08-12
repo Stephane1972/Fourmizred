@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Hors ligne — Ant Commander</title>
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="stylesheet" href="css/reset.css">
+<style>
+  html, body {
+    height: 100%;
+    background: #16110a;
+    color: #f0e0c0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .conteneur {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    gap: 14px;
+  }
+  img {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    opacity: 0.85;
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0;
+    color: #e0c69a;
+  }
+  p {
+    font-size: 14px;
+    opacity: 0.75;
+    max-width: 320px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  button {
+    margin-top: 10px;
+    background: #5a3d1e;
+    color: #f0e0c0;
+    border: 1px solid #8a6535;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:active {
+    background: #7a5228;
+  }
+</style>
+</head>
+<body>
+  <div class="conteneur">
+    <img src="assets/icons/icon-192.png" alt="Ant Commander">
+    <h1>Cette page n'est pas disponible hors ligne</h1>
+    <p>
+      Votre partie déjà chargée continue de fonctionner sans connexion.
+      Cette page précise-là n'a simplement pas encore été mise en cache
+      sur cet appareil. Vérifiez votre connexion et réessayez, ou
+      retournez à l'écran principal du jeu.
+    </p>
+    <button onclick="location.href = 'index.html'">Retour au jeu</button>
+  </div>
+</body>
+</html>
