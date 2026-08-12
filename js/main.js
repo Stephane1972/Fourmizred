@@ -1,14 +1,14 @@
 // ===========================================================
 // MAIN — point d'entrée de l'application : orchestration générale.
 //
-// La logique concrète vit désormais dans des modules dédiés :
+// La logique concrète vit dans des modules dédiés :
 //   - state.js     : état centralisé du jeu
 //   - camera.js    : déplacement/zoom de la caméra
 //   - input.js     : entrées souris/tactile
-//   - renderer.js  : dessin de la scène
+//   - renderer.js  : génération du terrain et dessin de la scène
 //
-// main.js ne garde que ce qui ne rentre nulle part ailleurs :
-// démarrage, écran de chargement, statut réseau, Service Worker.
+// main.js garde : démarrage, écran de chargement, statut réseau,
+// Service Worker, et le système de temps + la boucle de jeu.
 // ===========================================================
 
 // ---------------------------------------------------------
@@ -76,10 +76,46 @@ window.addEventListener('resize', redimensionnerCanvas);
 redimensionnerCanvas();
 
 // ---------------------------------------------------------
-// BOUCLE PRINCIPALE
+// SYSTÈME DE TEMPS — indépendant du taux de rafraîchissement de
+// l'écran. `temps.total` (secondes depuis le lancement) et
+// `temps.delta` (secondes depuis la frame précédente) sont ce que
+// tous les futurs systèmes de jeu (production, déplacement des
+// unités, minuteries de combat...) devront utiliser pour rester
+// cohérents quel que soit l'appareil.
 // ---------------------------------------------------------
-function boucle() {
-  rendreScene();
+const temps = {
+  total: 0,
+  delta: 0,
+  enPause: false
+};
+let dernierHorodatage = null;
+const DELTA_MAX = 0.25; // borne (secondes) pour éviter un bond après une mise en arrière-plan
+
+function mettreAJourTemps(horodatageActuel) {
+  if (dernierHorodatage === null) dernierHorodatage = horodatageActuel;
+  let delta = (horodatageActuel - dernierHorodatage) / 1000;
+  delta = clamp(delta, 0, DELTA_MAX);
+  dernierHorodatage = horodatageActuel;
+
+  temps.delta = temps.enPause ? 0 : delta;
+  temps.total += temps.delta;
+}
+
+// ---------------------------------------------------------
+// BOUCLE DE JEU
+// ---------------------------------------------------------
+function boucle(horodatageActuel) {
+  // App en arrière-plan : on ne calcule ni ne dessine rien, et on
+  // réinitialise la référence de temps pour éviter un bond au retour.
+  if (document.hidden) {
+    dernierHorodatage = null;
+    requestAnimationFrame(boucle);
+    return;
+  }
+
+  mettreAJourTemps(horodatageActuel);
+  rendreScene(temps);
+
   requestAnimationFrame(boucle);
 }
 
@@ -88,7 +124,8 @@ function boucle() {
 // ---------------------------------------------------------
 enregistrerServiceWorker();
 majStatutReseau();
+genererTerrain();
 initialiserInput();
-boucle();
+requestAnimationFrame(boucle);
 
 setTimeout(masquerEcranChargement, 400);

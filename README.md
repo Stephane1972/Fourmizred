@@ -116,6 +116,42 @@ Pour tester correctement en local :
 
 ---
 
+## État du projet — VAGUE 3 terminée
+
+Ajout de la carte réelle vue du dessus : terrain texturé, fourmilière
+visible, et un moteur de rendu qui ne dessine que ce qui est
+réellement à l'écran.
+
+### Ce qui a été ajouté
+
+- `js/renderer.js` — génération du terrain (taches de sol, cailloux,
+  brins d'herbe, adapté à la taille de la carte), la fourmilière au
+  centre (avec une légère animation de "respiration"), les retours
+  tactiles (anneau qui s'estompe à l'endroit touché), et un rendu qui
+  ignore tout ce qui est hors champ (culling via `zoneVisibleMonde()`)
+- `js/camera.js` — nouvelle fonction `zoneVisibleMonde()`, utilisée
+  par le renderer pour le culling
+- `js/input.js` — distingue un tap d'un glissement, déclenche le
+  retour tactile, bascule le curseur souris en "main" pendant le
+  glissement
+- `js/main.js` — véritable système de temps (`temps.total`,
+  `temps.delta`, indépendant du taux de rafraîchissement de l'écran),
+  boucle de jeu formalisée autour de ce système
+- `css/style.css` — curseur grab/grabbing sur le canevas
+- `css/mobile.css` — désactivation du tiré-vers-le-bas et du rebond
+  de défilement mobile, qui gênaient le glissement de la caméra
+
+### Vérifications effectuées
+
+Testé avec un vrai DOM simulé (pas juste une vérification de
+syntaxe) : génération du terrain, position de la fourmilière au
+centre exact de la carte, progression réelle de `temps.total` entre
+deux frames, cohérence de la zone visible calculée pour le culling,
+apparition d'un retour tactile après un tap, et bascule correcte de
+la classe CSS `saisie` pendant un glissement.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

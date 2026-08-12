@@ -1,14 +1,136 @@
 // ===========================================================
-// RENDERER — dessine la scène en fonction de l'état de la caméra.
-// À cette vague : un sol uni + une grille de repérage + les limites
-// de la carte, pour valider visuellement que déplacement et zoom
-// fonctionnent. Les bâtiments/unités/effets viendront aux prochaines
-// vagues, une fois buildings.js/units.js/combat.js en place.
+// RENDERER — génère et dessine la scène : terrain, fourmilière,
+// retours tactiles. Piloté par la caméra (camera.js) et le temps
+// (main.js). Les bâtiments/unités/effets de combat viendront aux
+// prochaines vagues (buildings.js, units.js, combat.js).
 // ===========================================================
 
-const TAILLE_CASE_GRILLE = 100;
+// ---------------------------------------------------------
+// TERRAIN — généré une seule fois au chargement, sur toute la carte.
+// Le rendu, lui, ne dessine que ce qui est visible (voir rendreScene).
+// ---------------------------------------------------------
+const tachesTerrain = [];
+const caillouxTerrain = [];
+const brindillesTerrain = [];
 
-function rendreScene() {
+function genererTerrain() {
+  const { largeur, hauteur } = etat.carte;
+
+  // Deux couches de taches de sol : une large et douce, une petite
+  // et plus contrastée par-dessus, pour un effet de profondeur.
+  const densite = (largeur * hauteur) / (3000 * 2000); // adapte la quantité à la taille réelle de la carte
+  for (let i = 0; i < 55 * densite; i++) {
+    tachesTerrain.push({
+      x: Math.random() * largeur,
+      y: Math.random() * hauteur,
+      rayon: 35 + Math.random() * 70,
+      couleur: Math.random() > 0.5 ? '#c9ab7c' : '#e0c69a',
+      opacite: 0.35 + Math.random() * 0.25
+    });
+  }
+  for (let i = 0; i < 90 * densite; i++) {
+    tachesTerrain.push({
+      x: Math.random() * largeur,
+      y: Math.random() * hauteur,
+      rayon: 8 + Math.random() * 22,
+      couleur: Math.random() > 0.5 ? '#b89568' : '#ecd7ab',
+      opacite: 0.5 + Math.random() * 0.3
+    });
+  }
+
+  for (let i = 0; i < 140 * densite; i++) {
+    caillouxTerrain.push({
+      x: Math.random() * largeur,
+      y: Math.random() * hauteur,
+      rayon: 1.5 + Math.random() * 2.5,
+      couleur: Math.random() > 0.5 ? '#8a7355' : '#a89070'
+    });
+  }
+
+  for (let i = 0; i < 200 * densite; i++) {
+    brindillesTerrain.push({
+      x: Math.random() * largeur,
+      y: Math.random() * hauteur,
+      hauteur: 4 + Math.random() * 5,
+      angle: nombreAleatoire(-0.5, 0.5)
+    });
+  }
+}
+
+// ---------------------------------------------------------
+// FOURMILIÈRE — cœur de la colonie, au centre de la carte.
+// Purement visuelle à ce stade ; deviendra un vrai bâtiment
+// interactif (production, PV...) avec buildings.js.
+// ---------------------------------------------------------
+const fourmiliere = {
+  x: etat.carte.largeur / 2,
+  y: etat.carte.hauteur / 2,
+  rayon: 70
+};
+
+function dessinerFourmiliere(ctx, temps) {
+  const { x, y, rayon } = fourmiliere;
+
+  // Chemin de terre battue tout autour, façon zone piétinée
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = '#b89568';
+  ctx.beginPath();
+  ctx.ellipse(x, y, rayon * 1.7, rayon * 1.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Légère respiration animée (démontre le système de temps : la
+  // fourmilière "vit" même sans aucune unité ni bâtiment encore actifs)
+  const respiration = Math.sin(temps.total * 1.2) * 3;
+
+  const degrade = ctx.createRadialGradient(x - 15, y - 12, 4, x, y, rayon + respiration);
+  degrade.addColorStop(0, ajusterCouleur('#3a2818', 35));
+  degrade.addColorStop(1, '#3a2818');
+  ctx.fillStyle = degrade;
+  ctx.beginPath();
+  ctx.ellipse(x, y, rayon + respiration, (rayon + respiration) * 0.78, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#241a10';
+  ctx.lineWidth = 3 / etat.camera.zoom;
+  ctx.stroke();
+
+  ctx.fillStyle = '#f0e0c0';
+  ctx.font = `${14 / etat.camera.zoom}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Fourmilière', x, y - rayon - 14 / etat.camera.zoom);
+}
+
+// ---------------------------------------------------------
+// RETOURS TACTILES — petit anneau qui s'estompe à l'endroit touché,
+// pour donner un repère visuel immédiat sur écran tactile.
+// ---------------------------------------------------------
+const retoursTactiles = [];
+const DUREE_RETOUR_TACTILE = 0.4; // secondes
+
+function ajouterRetourTactile(x, y) {
+  retoursTactiles.push({ x, y, age: 0 });
+}
+
+function mettreAJourEtDessinerRetoursTactiles(ctx, delta) {
+  for (let i = retoursTactiles.length - 1; i >= 0; i--) {
+    const r = retoursTactiles[i];
+    r.age += delta;
+    if (r.age >= DUREE_RETOUR_TACTILE) { retoursTactiles.splice(i, 1); continue; }
+    const t = r.age / DUREE_RETOUR_TACTILE;
+    ctx.globalAlpha = 1 - t;
+    ctx.strokeStyle = '#ffd27a';
+    ctx.lineWidth = 2 / etat.camera.zoom;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, (6 + t * 18) / etat.camera.zoom, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------------------------------------------------------
+// RENDU PRINCIPAL — appelé chaque frame par la boucle de jeu (main.js)
+// ---------------------------------------------------------
+function rendreScene(temps) {
   ctx.fillStyle = '#16110a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -17,23 +139,39 @@ function rendreScene() {
   ctx.scale(etat.camera.zoom, etat.camera.zoom);
   ctx.translate(-etat.camera.x, -etat.camera.y);
 
-  // Sol de la carte
+  // Sol de base
   ctx.fillStyle = PALETTE.sol;
   ctx.fillRect(0, 0, etat.carte.largeur, etat.carte.hauteur);
 
-  // Grille de repérage (une ligne tous les TAILLE_CASE_GRILLE)
-  ctx.strokeStyle = 'rgba(58,40,24,0.15)';
-  ctx.lineWidth = 1 / etat.camera.zoom;
-  for (let x = 0; x <= etat.carte.largeur; x += TAILLE_CASE_GRILLE) {
+  // Zone visible (+ marge) : tout ce qui est en dehors n'est pas dessiné
+  const zone = zoneVisibleMonde(100);
+
+  for (const t of tachesTerrain) {
+    if (t.x + t.rayon < zone.x1 || t.x - t.rayon > zone.x2 ||
+        t.y + t.rayon < zone.y1 || t.y - t.rayon > zone.y2) continue;
+    ctx.globalAlpha = t.opacite;
+    ctx.fillStyle = t.couleur;
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, etat.carte.hauteur);
-    ctx.stroke();
+    ctx.ellipse(t.x, t.y, t.rayon, t.rayon * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
-  for (let y = 0; y <= etat.carte.hauteur; y += TAILLE_CASE_GRILLE) {
+  ctx.globalAlpha = 1;
+
+  for (const c of caillouxTerrain) {
+    if (c.x < zone.x1 || c.x > zone.x2 || c.y < zone.y1 || c.y > zone.y2) continue;
+    ctx.fillStyle = c.couleur;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(etat.carte.largeur, y);
+    ctx.ellipse(c.x, c.y, c.rayon, c.rayon * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = 'rgba(90,110,50,0.5)';
+  ctx.lineWidth = 1 / etat.camera.zoom;
+  for (const b of brindillesTerrain) {
+    if (b.x < zone.x1 || b.x > zone.x2 || b.y < zone.y1 || b.y > zone.y2) continue;
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x + Math.sin(b.angle) * 3, b.y - b.hauteur);
     ctx.stroke();
   }
 
@@ -42,28 +180,24 @@ function rendreScene() {
   ctx.lineWidth = 4 / etat.camera.zoom;
   ctx.strokeRect(0, 0, etat.carte.largeur, etat.carte.hauteur);
 
-  // Repère central, pour se situer pendant les tests
-  ctx.fillStyle = 'rgba(58,40,24,0.4)';
-  ctx.beginPath();
-  ctx.arc(etat.carte.largeur / 2, etat.carte.hauteur / 2, 14 / etat.camera.zoom, 0, Math.PI * 2);
-  ctx.fill();
+  dessinerFourmiliere(ctx, temps);
+  mettreAJourEtDessinerRetoursTactiles(ctx, temps.delta);
 
   ctx.restore();
 
-  dessinerSurcoucheDebug();
+  dessinerSurcoucheDebug(temps);
 }
 
-// Petit panneau de diagnostic (position/zoom caméra), utile pendant
-// le développement — sera retiré ou caché derrière une option une
-// fois l'interface de jeu réelle (ui.js) en place.
-function dessinerSurcoucheDebug() {
+// Petit panneau de diagnostic, utile pendant le développement — sera
+// caché derrière une option une fois l'interface réelle (ui.js) en place.
+function dessinerSurcoucheDebug(temps) {
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(8, canvas.height - 44, 230, 36);
+  ctx.fillRect(8, canvas.height - 44, 260, 36);
   ctx.fillStyle = '#f0e0c0';
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.fillText(
-    `caméra x:${Math.round(etat.camera.x)} y:${Math.round(etat.camera.y)} zoom:${etat.camera.zoom.toFixed(2)}`,
+    `cam x:${Math.round(etat.camera.x)} y:${Math.round(etat.camera.y)} zoom:${etat.camera.zoom.toFixed(2)} · t:${temps.total.toFixed(1)}s`,
     16, canvas.height - 22
   );
 }

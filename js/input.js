@@ -1,14 +1,17 @@
 // ===========================================================
-// INPUT — entrées souris/tactile/clavier. À cette vague, uniquement
-// le pilotage de la caméra (glisser pour déplacer, molette/pincement
-// pour zoomer). La sélection d'unités et les ordres arriveront avec
-// units.js à une prochaine vague.
+// INPUT — entrées souris/tactile/clavier. À cette vague : pilotage
+// de la caméra (glisser pour déplacer, molette/pincement pour
+// zoomer) et retour visuel tactile. La sélection d'unités et les
+// ordres arriveront avec units.js à une prochaine vague.
 // ===========================================================
 
 const pointeursActifs = new Map();
 let modeGlissement = null; // 'camera' | null
 let dernierPointUnique = null;
 let distancePincementPrecedente = null;
+let distanceTotaleGlissee = 0; // pour distinguer un tap d'un glissement
+
+const SEUIL_TAP = 6; // px : en-dessous, on considère que c'est un tap, pas un glissement
 
 function initialiserInput() {
   canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -20,6 +23,8 @@ function initialiserInput() {
     if (pointeursActifs.size === 1) {
       modeGlissement = 'camera';
       dernierPointUnique = { x: e.clientX, y: e.clientY };
+      distanceTotaleGlissee = 0;
+      canvas.classList.add('saisie'); // curseur "main fermée" pendant le glisser (desktop)
     } else if (pointeursActifs.size === 2) {
       distancePincementPrecedente = distanceEntrePointeurs();
     }
@@ -32,6 +37,7 @@ function initialiserInput() {
     if (pointeursActifs.size === 1 && modeGlissement === 'camera') {
       const dx = e.clientX - dernierPointUnique.x;
       const dy = e.clientY - dernierPointUnique.y;
+      distanceTotaleGlissee += Math.hypot(dx, dy);
       deplacerCamera(dx, dy);
       dernierPointUnique = { x: e.clientX, y: e.clientY };
     } else if (pointeursActifs.size === 2) {
@@ -46,10 +52,19 @@ function initialiserInput() {
   });
 
   function finPointeur(e) {
+    // Si le pointeur n'a quasiment pas bougé, c'est un tap/clic simple :
+    // on affiche un petit retour visuel à l'endroit touché (utile sur
+    // tactile, où il n'y a pas de curseur permanent pour se repérer).
+    if (pointeursActifs.size === 1 && distanceTotaleGlissee < SEUIL_TAP) {
+      const point = ecranVersMonde(e.clientX, e.clientY);
+      ajouterRetourTactile(point.x, point.y);
+    }
+
     pointeursActifs.delete(e.pointerId);
     if (pointeursActifs.size === 0) {
       modeGlissement = null;
       dernierPointUnique = null;
+      canvas.classList.remove('saisie');
     }
     if (pointeursActifs.size < 2) {
       distancePincementPrecedente = null;

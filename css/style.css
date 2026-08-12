@@ -28,6 +28,11 @@ html, body {
   width: 100vw;
   height: 100vh;
   background: var(--couleur-fond);
+  cursor: grab;
+}
+
+#canvas-jeu.saisie {
+  cursor: grabbing;
 }
 
 /* ---------------------------------------------------------

@@ -66,3 +66,20 @@ function mondeVersEcran(mx, my) {
     y: (my - cam.y) * cam.zoom + canvas.height / 2
   };
 }
+
+// Rectangle du monde actuellement visible à l'écran, avec une marge
+// optionnelle (utile pour ne pas faire "sauter" un élément dessiné
+// juste hors champ). Utilisé par renderer.js pour ignorer tout ce qui
+// est hors écran et ne pas gaspiller de temps de rendu inutilement.
+function zoneVisibleMonde(marge) {
+  const cam = etat.camera;
+  const m = marge || 0;
+  const demiLargeur = (canvas.width / cam.zoom) / 2 + m;
+  const demiHauteur = (canvas.height / cam.zoom) / 2 + m;
+  return {
+    x1: cam.x - demiLargeur,
+    y1: cam.y - demiHauteur,
+    x2: cam.x + demiLargeur,
+    y2: cam.y + demiHauteur
+  };
+}

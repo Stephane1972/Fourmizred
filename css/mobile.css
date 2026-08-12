@@ -6,6 +6,17 @@
    d'unité, etc.
    =========================================================== */
 
+/* Empêche le "tiré-vers-le-bas" (pull-to-refresh) et l'effet de
+   rebond du navigateur mobile, qui entreraient en conflit avec le
+   glissement de la caméra à un doigt sur le canevas de jeu. */
+html, body {
+  overscroll-behavior: none;
+}
+
+#canvas-jeu {
+  touch-action: none;
+}
+
 /* Respecte les zones sûres des écrans avec encoche/coins arrondis */
 #statut-reseau {
   top: max(10px, env(safe-area-inset-top));
