@@ -220,6 +220,51 @@ sauvegarde automatique).
 
 ---
 
+## État du projet — VAGUE 5 (production d'unités) terminée
+
+Trois bâtiments producteurs et cinq unités jouables, avec de vraies
+files de production.
+
+### Ce qui a été ajouté
+
+- `js/units.js` (nouveau) — 5 unités définies avec coût, temps de
+  production, PV, vitesse et capacité particulière (Ouvrière,
+  Nourrice, Éclaireuse, Fourmi rouge, Fourmi charpentière), rendu
+  simple mais distinct par type, avec légère animation de repos
+- `js/buildings.js` (nouveau) — Nurserie (Ouvrière, Nourrice),
+  Caserne (Fourmi rouge, Fourmi charpentière), École des éclaireuses
+  (Éclaireuse) ; chaque bâtiment a sa propre file de production,
+  affichée avec une barre de progression
+- Vérifications intégrées : coût prélevé uniquement si payable,
+  population réservée dès la mise en file (pas seulement à la
+  sortie, pour ne jamais dépasser la limite), refus propre si
+  ressources insuffisantes ou population au maximum
+- `js/storage.js` — les bâtiments et leurs files en cours vivent dans
+  `etat.batiments` (déjà prévu depuis la vague 1), donc automatiquement
+  inclus dans les sauvegardes sans changement de structure
+
+### Ce qui n'existe pas encore
+
+Les unités produites restent immobiles près de leur bâtiment — ni
+déplacement, ni sélection, ni ordres, ni combat. Ce sera pour une
+prochaine vague (probablement en étendant `input.js`).
+
+Pas encore de vrai menu de production cliquable : des raccourcis
+clavier temporaires (1 à 5) permettent de tester dès maintenant,
+en attendant `ui.js`.
+
+### Vérifications effectuées
+
+Testé de bout en bout avec un vrai DOM simulé : placement des 3
+bâtiments, mise en production avec prélèvement exact du coût,
+apparition réelle d'une unité une fois le temps écoulé, présence de
+toutes les statistiques requises sur les 5 types d'unités, refus
+correct en cas de ressources insuffisantes ou de population au
+maximum, et conservation des bâtiments/unités à travers une
+sauvegarde/rechargement complet.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

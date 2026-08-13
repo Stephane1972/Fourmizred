@@ -211,7 +211,9 @@ function rendreScene(temps) {
     dessinerNoeudRessource(ctx, noeud);
   }
 
+  dessinerBatimentsProduction(ctx);
   dessinerFourmiliere(ctx, temps);
+  dessinerUnites(ctx, temps);
   mettreAJourEtDessinerTextesFlottants(ctx, temps.delta);
   mettreAJourEtDessinerRetoursTactiles(ctx, temps.delta);
 
@@ -236,7 +238,7 @@ function dessinerSurcoucheDebug(temps) {
   // d'interface (ui.js) à une prochaine vague.
   const r = etat.ressources;
   ctx.fillText(
-    `🌾${formaterNombre(r.nourriture)}  💧${formaterNombre(r.eau)}  🪵${formaterNombre(r.materiaux)}  👥${r.population}/${r.populationMax}`,
+    `🌾${formaterNombre(r.nourriture)}  💧${formaterNombre(r.eau)}  🪵${formaterNombre(r.materiaux)}  👥${r.population}/${r.populationMax}  🐜${etat.unites.length}`,
     16, canvas.height - 22
   );
 }

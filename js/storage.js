@@ -189,6 +189,7 @@ async function demarrerPartie() {
   } else {
     nouvellePartie();
     genererRessources();
+    genererBatimentsProduction();
     console.log('Nouvelle partie démarrée (aucune sauvegarde trouvée).');
   }
 }

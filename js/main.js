@@ -124,6 +124,7 @@ function boucle(horodatageActuel) {
 
   mettreAJourTemps(horodatageActuel);
   mettreAJourAutoSave(temps.delta);
+  mettreAJourProduction(temps.delta);
   rendreScene(temps);
 
   requestAnimationFrame(boucle);
@@ -159,8 +160,29 @@ window.addEventListener('keydown', (e) => {
     supprimerSauvegarde('manuel')
       .then(() => console.log('Sauvegarde manuelle supprimée.'))
       .catch((erreur) => console.error('Échec de la suppression :', erreur));
+  } else if (RACCOURCIS_PRODUCTION[touche]) {
+    const [typeBatiment, typeUnite] = RACCOURCIS_PRODUCTION[touche];
+    const batiment = trouverBatiment(typeBatiment);
+    if (!batiment) return;
+    const succes = mettreEnFileProduction(batiment, typeUnite);
+    console.log(succes
+      ? `${TYPES_UNITE[typeUnite].label} mise en production (${TYPES_BATIMENT_PRODUCTION[typeBatiment].label}).`
+      : `Impossible de produire ${TYPES_UNITE[typeUnite].label} pour le moment.`);
   }
 });
+
+// Raccourcis de test pour la production — provisoire, sera remplacé
+// par le vrai menu de production de ui.js.
+//   1 = Ouvrière (Nurserie)      4 = Fourmi rouge (Caserne)
+//   2 = Nourrice (Nurserie)      5 = Fourmi charpentière (Caserne)
+//   3 = Éclaireuse (École des éclaireuses)
+const RACCOURCIS_PRODUCTION = {
+  '1': ['nurserie', 'ouvriere'],
+  '2': ['nurserie', 'nourrice'],
+  '3': ['ecoleEclaireuses', 'eclaireuse'],
+  '4': ['caserne', 'fourmiRouge'],
+  '5': ['caserne', 'fourmiCharpentiere']
+};
 
 // ---------------------------------------------------------
 // DÉMARRAGE
