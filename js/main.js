@@ -125,6 +125,7 @@ function boucle(horodatageActuel) {
   mettreAJourTemps(horodatageActuel);
   mettreAJourAutoSave(temps.delta);
   mettreAJourProduction(temps.delta);
+  mettreAJourCombat(temps.delta);
   rendreScene(temps);
 
   requestAnimationFrame(boucle);

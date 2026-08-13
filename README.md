@@ -265,6 +265,45 @@ sauvegarde/rechargement complet.
 
 ---
 
+## État du projet — VAGUE 6 (combat) terminée
+
+Premier système de combat jouable, avec un adversaire réel sur la carte.
+
+### Ce qui a été ajouté
+
+- `js/combat.js` (nouveau) — `ordonnerAttaque()`, déplacement vers la
+  cible jusqu'à portée, `resoudreCombats()` qui calcule les dégâts
+  pour chaque paire joueur/ennemi mutuellement à portée (jamais entre
+  unités d'une même faction — c'est la garantie contre les blessures
+  alliées), destruction à 0 PV avec libération de la population,
+  et la colonie rivale (nid + 3 fourmis rouges + 2 ouvrières)
+- `js/units.js` — chaque unité a désormais `degats`, `portee` et
+  `cadenceAttaque` en plus de ses statistiques existantes ; anneau de
+  sélection vert au sol ; teinte rougeâtre pour distinguer les
+  unités ennemies au premier coup d'œil
+- `js/input.js` — un tap sur une unité alliée la sélectionne ; un tap
+  sur une unité ennemie donne l'ordre d'attaque à tout ce qui est
+  actuellement sélectionné
+
+### Vérifications effectuées
+
+Testé de bout en bout avec un vrai DOM simulé : présence de la
+colonie rivale, sélection d'une unité, déplacement réel vers la
+cible après un ordre d'attaque, aucun dégât hors de portée puis
+dégât dès le contact, destruction effective d'une unité tombée à 0
+PV, et — le point le plus important — deux unités alliées au contact
+direct l'une de l'autre conservent chacune tous leurs PV intacts.
+
+### Ce qui n'existe pas encore
+
+Pas d'intelligence artificielle : la colonie rivale ne bouge pas et
+n'attaque pas de son propre chef, elle se défend seulement si on
+vient l'attaquer (ce sera le rôle de `ai.js`). Pas encore de
+sélection multiple par glisser (un tap sélectionne une seule unité à
+la fois), pas de menu de combat ni d'unités rares.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

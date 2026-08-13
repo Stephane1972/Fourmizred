@@ -55,11 +55,26 @@ function initialiserInput() {
     // Si le pointeur n'a quasiment pas bougé, c'est un tap/clic simple.
     if (pointeursActifs.size === 1 && distanceTotaleGlissee < SEUIL_TAP) {
       const point = ecranVersMonde(e.clientX, e.clientY);
-      const noeud = trouverNoeudSous(point.x, point.y);
-      if (noeud) {
-        collecterRessource(noeud);
+      const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
+      const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
+
+      if (uniteAlliee) {
+        // Sélectionne uniquement cette unité (remplace la sélection précédente)
+        for (const u of etat.unites) u.selectionnee = false;
+        uniteAlliee.selectionnee = true;
+      } else if (uniteEnnemie) {
+        // Toutes les unités alliées actuellement sélectionnées reçoivent
+        // l'ordre d'attaquer la cible touchée.
+        const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
+        for (const u of selectionnees) ordonnerAttaque(u, uniteEnnemie.id);
       } else {
-        ajouterRetourTactile(point.x, point.y);
+        const noeud = trouverNoeudSous(point.x, point.y);
+        if (noeud) {
+          collecterRessource(noeud);
+        } else {
+          for (const u of etat.unites) u.selectionnee = false;
+          ajouterRetourTactile(point.x, point.y);
+        }
       }
     }
 

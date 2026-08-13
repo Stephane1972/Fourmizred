@@ -2,11 +2,8 @@
 // UNITS — définition des types d'unités et de leurs statistiques,
 // et gestion des instances vivantes (etat.unites, voir state.js).
 //
-// À cette vague : uniquement la PRODUCTION. Les unités produites
-// apparaissent près de leur bâtiment et y restent (légère animation
-// de repos). Le déplacement, la sélection et les ordres viendront à
-// une prochaine vague (probablement un input.js étendu + un vrai
-// système de commande).
+// Le combat (dégâts, portée, sélection, ordres) vit dans combat.js,
+// qui s'appuie sur les statistiques définies ici.
 // ===========================================================
 
 const TYPES_UNITE = {
@@ -16,6 +13,9 @@ const TYPES_UNITE = {
     tempsProduction: 8,
     pv: 40,
     vitesse: 60,
+    degats: 2,
+    portee: 14,
+    cadenceAttaque: 1.5,
     capacite: 'Peut collecter les ressources de la carte',
     couleur: '#8a6a45'
   },
@@ -25,6 +25,9 @@ const TYPES_UNITE = {
     tempsProduction: 10,
     pv: 30,
     vitesse: 45,
+    degats: 1,
+    portee: 14,
+    cadenceAttaque: 1.8,
     capacite: 'Accélère la croissance des larves à proximité',
     couleur: '#c9a8d8'
   },
@@ -34,6 +37,9 @@ const TYPES_UNITE = {
     tempsProduction: 6,
     pv: 25,
     vitesse: 110,
+    degats: 3,
+    portee: 16,
+    cadenceAttaque: 1.2,
     capacite: 'Grand rayon de vision, repère les menaces au loin',
     couleur: '#e0c69a'
   },
@@ -43,6 +49,9 @@ const TYPES_UNITE = {
     tempsProduction: 14,
     pv: 70,
     vitesse: 55,
+    degats: 12,
+    portee: 18,
+    cadenceAttaque: 0.9,
     capacite: 'Morsure acide, dégâts bonus contre unités légères',
     couleur: '#c0402a'
   },
@@ -52,6 +61,9 @@ const TYPES_UNITE = {
     tempsProduction: 16,
     pv: 90,
     vitesse: 50,
+    degats: 16,
+    portee: 20,
+    cadenceAttaque: 1.0,
     capacite: 'Mandibules puissantes, dégâts bonus contre bâtiments',
     couleur: '#5a3820'
   }
@@ -67,27 +79,71 @@ function creerUnite(typeUnite, batiment) {
   const angle = Math.random() * Math.PI * 2;
   const rayonSortie = defBatiment.rayon + 18;
 
-  etat.unites.push({
+  etat.unites.push(creerInstanceUnite(
+    typeUnite,
+    batiment.x + Math.cos(angle) * rayonSortie,
+    batiment.y + Math.sin(angle) * rayonSortie,
+    'joueur'
+  ));
+}
+
+// Fabrique brute d'une instance d'unité — utilisée à la fois par la
+// production (ci-dessus) et par combat.js pour poser la colonie
+// ennemie de départ.
+function creerInstanceUnite(typeUnite, x, y, faction) {
+  const def = TYPES_UNITE[typeUnite];
+  return {
     id: prochainIdUnite++,
     type: typeUnite,
-    x: batiment.x + Math.cos(angle) * rayonSortie,
-    y: batiment.y + Math.sin(angle) * rayonSortie,
+    x, y,
     pv: def.pv,
     pvMax: def.pv,
     vitesse: def.vitesse,
-    faction: 'joueur',
+    faction,
+    selectionnee: false,
+    ordre: null,        // null | 'attaquer'
+    cibleId: null,       // id de l'unité ciblée par un ordre d'attaque
+    cooldownAttaque: 0,
     phaseIdle: Math.random() * Math.PI * 2
-  });
+  };
+}
+
+const RAYON_TOUCHE_UNITE = 20;
+
+// Trouve l'unité vivante la plus proche d'un point du monde, avec un
+// filtre de faction optionnel. Utilisée par input.js pour la
+// sélection et le ciblage.
+function trouverUniteSous(mondeX, mondeY, faction) {
+  let plusProche = null, meilleureDist = RAYON_TOUCHE_UNITE;
+  for (const u of etat.unites) {
+    if (u.pv <= 0) continue;
+    if (faction && u.faction !== faction) continue;
+    const d = distance(u.x, u.y, mondeX, mondeY);
+    if (d < meilleureDist) { meilleureDist = d; plusProche = u; }
+  }
+  return plusProche;
 }
 
 // ---------------------------------------------------------
 // RENDU — simple mais distinct par type (couleur propre à chaque
-// unité). Un vrai modèle détaillé pourra remplacer ceci plus tard.
+// unité), avec une teinte rougeâtre pour la faction ennemie afin de
+// distinguer immédiatement alliés et adversaires au combat.
 // ---------------------------------------------------------
 function dessinerUnite(ctx, u, temps) {
   const def = TYPES_UNITE[u.type];
   if (!def) return;
+
+  // Anneau de sélection, au sol, ne suit pas l'animation de repos
+  if (u.selectionnee) {
+    ctx.strokeStyle = '#3ae03a';
+    ctx.lineWidth = 1.5 / etat.camera.zoom;
+    ctx.beginPath();
+    ctx.ellipse(u.x, u.y, 12, 8, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   const respiration = Math.sin(temps.total * 2 + u.phaseIdle) * 1.4;
+  const couleurCorps = u.faction === 'ennemi' ? ajusterCouleur('#8a2418', 0) : def.couleur;
 
   ctx.save();
   ctx.translate(u.x, u.y + respiration);
@@ -99,13 +155,13 @@ function dessinerUnite(ctx, u, temps) {
   ctx.fill();
 
   // Abdomen
-  ctx.fillStyle = def.couleur;
+  ctx.fillStyle = couleurCorps;
   ctx.beginPath();
   ctx.ellipse(-2, 0, 6, 4.5, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Tête
-  ctx.fillStyle = ajusterCouleur(def.couleur, -30);
+  ctx.fillStyle = ajusterCouleur(couleurCorps, -30);
   ctx.beginPath();
   ctx.ellipse(6, 0, 3.2, 2.8, 0, 0, Math.PI * 2);
   ctx.fill();

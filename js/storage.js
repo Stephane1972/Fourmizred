@@ -190,6 +190,7 @@ async function demarrerPartie() {
     nouvellePartie();
     genererRessources();
     genererBatimentsProduction();
+    genererColonieEnnemie();
     console.log('Nouvelle partie démarrée (aucune sauvegarde trouvée).');
   }
 }

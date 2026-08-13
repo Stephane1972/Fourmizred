@@ -212,6 +212,7 @@ function rendreScene(temps) {
   }
 
   dessinerBatimentsProduction(ctx);
+  dessinerNidEnnemi(ctx);
   dessinerFourmiliere(ctx, temps);
   dessinerUnites(ctx, temps);
   mettreAJourEtDessinerTextesFlottants(ctx, temps.delta);
