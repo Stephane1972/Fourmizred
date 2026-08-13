@@ -70,8 +70,30 @@ function ajouterNoeuds(type, quantite) {
 }
 
 // ---------------------------------------------------------
-// RENDU d'un nœud de ressource — appelé par renderer.js
+// COLLECTE SIMPLE — toucher/cliquer un nœud prélève directement une
+// petite quantité dans le stock de la colonie. Pas encore d'unité
+// qui vient récolter automatiquement : ce sera le rôle de units.js.
 // ---------------------------------------------------------
+const MONTANT_COLLECTE_PAR_TAP = 20;
+const RAYON_TOUCHE_NOEUD = 26;
+
+function trouverNoeudSous(mondeX, mondeY) {
+  for (const n of noeudsRessource) {
+    if (n.quantite <= 0) continue;
+    if (distance(n.x, n.y, mondeX, mondeY) < RAYON_TOUCHE_NOEUD) return n;
+  }
+  return null;
+}
+
+function collecterRessource(noeud) {
+  if (noeud.quantite <= 0) return 0;
+  const preleve = Math.min(MONTANT_COLLECTE_PAR_TAP, noeud.quantite);
+  noeud.quantite -= preleve;
+  etat.ressources[noeud.type] += preleve;
+  const def = TYPES_RESSOURCE[noeud.type];
+  ajouterTexteFlottant(noeud.x, noeud.y - 12, '+' + preleve, def.couleurPrincipale);
+  return preleve;
+}
 function dessinerNoeudRessource(ctx, noeud) {
   if (noeud.quantite <= 0) return;
   const def = TYPES_RESSOURCE[noeud.type];

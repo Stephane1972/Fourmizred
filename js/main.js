@@ -5,6 +5,8 @@
 //   - state.js     : état centralisé du jeu
 //   - camera.js    : déplacement/zoom de la caméra
 //   - input.js     : entrées souris/tactile
+//   - resources.js : nœuds de ressources et collecte
+//   - storage.js   : sauvegarde/chargement (IndexedDB)
 //   - renderer.js  : génération du terrain et dessin de la scène
 //
 // main.js garde : démarrage, écran de chargement, statut réseau,
@@ -92,6 +94,13 @@ let dernierHorodatage = null;
 const DELTA_MAX = 0.25; // borne (secondes) pour éviter un bond après une mise en arrière-plan
 
 function mettreAJourTemps(horodatageActuel) {
+  // Garde défensive symétrique à celle de storage.js : un horodatage
+  // invalide ne doit jamais produire un delta NaN qui se propagerait
+  // silencieusement dans tout le reste du jeu.
+  if (!Number.isFinite(horodatageActuel)) {
+    temps.delta = 0;
+    return;
+  }
   if (dernierHorodatage === null) dernierHorodatage = horodatageActuel;
   let delta = (horodatageActuel - dernierHorodatage) / 1000;
   delta = clamp(delta, 0, DELTA_MAX);
@@ -114,19 +123,53 @@ function boucle(horodatageActuel) {
   }
 
   mettreAJourTemps(horodatageActuel);
+  mettreAJourAutoSave(temps.delta);
   rendreScene(temps);
 
   requestAnimationFrame(boucle);
 }
 
 // ---------------------------------------------------------
+// RACCOURCIS DE TEST — sauvegarde/chargement/suppression manuels.
+// Provisoire : sera remplacé par de vrais boutons dans ui.js. Permet
+// de tester dès maintenant toute l'API de storage.js sans attendre
+// l'interface.
+//   S = sauvegarder sur l'emplacement "manuel"
+//   L = charger l'emplacement "manuel"
+//   Suppr = supprimer l'emplacement "manuel"
+// ---------------------------------------------------------
+window.addEventListener('keydown', (e) => {
+  const touche = e.key.toLowerCase();
+  if (touche === 's') {
+    sauvegarderPartie('manuel')
+      .then(() => console.log('Sauvegarde manuelle effectuée (emplacement "manuel").'))
+      .catch((erreur) => console.error('Échec de la sauvegarde manuelle :', erreur));
+  } else if (touche === 'l') {
+    chargerPartie('manuel')
+      .then((sauvegarde) => {
+        if (sauvegarde) {
+          appliquerInstantane(sauvegarde);
+          console.log('Sauvegarde manuelle chargée.');
+        } else {
+          console.log('Aucune sauvegarde sur l\'emplacement "manuel".');
+        }
+      })
+      .catch((erreur) => console.error('Échec du chargement :', erreur));
+  } else if (touche === 'delete' || touche === 'backspace') {
+    supprimerSauvegarde('manuel')
+      .then(() => console.log('Sauvegarde manuelle supprimée.'))
+      .catch((erreur) => console.error('Échec de la suppression :', erreur));
+  }
+});
+
+// ---------------------------------------------------------
 // DÉMARRAGE
 // ---------------------------------------------------------
 enregistrerServiceWorker();
 majStatutReseau();
-genererTerrain();
-genererRessources();
 initialiserInput();
-requestAnimationFrame(boucle);
 
-setTimeout(masquerEcranChargement, 400);
+demarrerPartie().finally(() => {
+  requestAnimationFrame(boucle);
+  setTimeout(masquerEcranChargement, 400);
+});

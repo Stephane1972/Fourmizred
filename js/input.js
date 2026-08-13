@@ -52,12 +52,15 @@ function initialiserInput() {
   });
 
   function finPointeur(e) {
-    // Si le pointeur n'a quasiment pas bougé, c'est un tap/clic simple :
-    // on affiche un petit retour visuel à l'endroit touché (utile sur
-    // tactile, où il n'y a pas de curseur permanent pour se repérer).
+    // Si le pointeur n'a quasiment pas bougé, c'est un tap/clic simple.
     if (pointeursActifs.size === 1 && distanceTotaleGlissee < SEUIL_TAP) {
       const point = ecranVersMonde(e.clientX, e.clientY);
-      ajouterRetourTactile(point.x, point.y);
+      const noeud = trouverNoeudSous(point.x, point.y);
+      if (noeud) {
+        collecterRessource(noeud);
+      } else {
+        ajouterRetourTactile(point.x, point.y);
+      }
     }
 
     pointeursActifs.delete(e.pointerId);

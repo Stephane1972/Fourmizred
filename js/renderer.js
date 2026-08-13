@@ -101,6 +101,32 @@ function dessinerFourmiliere(ctx, temps) {
 }
 
 // ---------------------------------------------------------
+// TEXTES FLOTTANTS — retour visuel de collecte ("+20" qui monte et
+// s'estompe). Réutilisable par n'importe quel système du jeu.
+// ---------------------------------------------------------
+const textesFlottants = [];
+const DUREE_TEXTE_FLOTTANT = 0.9; // secondes
+
+function ajouterTexteFlottant(x, y, texte, couleur) {
+  textesFlottants.push({ x, y, texte, couleur, age: 0 });
+}
+
+function mettreAJourEtDessinerTextesFlottants(ctx, delta) {
+  for (let i = textesFlottants.length - 1; i >= 0; i--) {
+    const t = textesFlottants[i];
+    t.age += delta;
+    if (t.age >= DUREE_TEXTE_FLOTTANT) { textesFlottants.splice(i, 1); continue; }
+    const progression = t.age / DUREE_TEXTE_FLOTTANT;
+    ctx.globalAlpha = 1 - progression;
+    ctx.fillStyle = t.couleur;
+    ctx.font = `bold ${13 / etat.camera.zoom}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText(t.texte, t.x, t.y - progression * 20 / etat.camera.zoom);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------------------------------------------------------
 // RETOURS TACTILES — petit anneau qui s'estompe à l'endroit touché,
 // pour donner un repère visuel immédiat sur écran tactile.
 // ---------------------------------------------------------
@@ -186,6 +212,7 @@ function rendreScene(temps) {
   }
 
   dessinerFourmiliere(ctx, temps);
+  mettreAJourEtDessinerTextesFlottants(ctx, temps.delta);
   mettreAJourEtDessinerRetoursTactiles(ctx, temps.delta);
 
   ctx.restore();

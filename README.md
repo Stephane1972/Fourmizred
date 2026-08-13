@@ -179,6 +179,47 @@ nœud en dehors des limites de la carte, et le rendu de chaque type
 
 ---
 
+## État du projet — VAGUE 4 (collecte + sauvegarde) terminée
+
+Deux ajouts majeurs : une première forme de collecte (toucher un nœud
+de ressource) et une vraie persistance de partie via IndexedDB.
+
+### Ce qui a été ajouté
+
+- `js/resources.js` — `collecterRessource()` : toucher un nœud
+  prélève 20 unités dans le stock et les retire du nœud, avec un
+  retour visuel "+20" flottant
+- `js/renderer.js` — système de textes flottants réutilisable
+- `js/input.js` — un tap distingue maintenant "sur un nœud" (collecte)
+  de "sur le sol" (simple retour tactile)
+- `js/storage.js` (nouveau) — API complète IndexedDB :
+  `sauvegarderPartie`, `chargerPartie`, `supprimerSauvegarde`,
+  `listerSauvegardes` (plusieurs emplacements nommés), sauvegarde
+  automatique toutes les 30s, et `demarrerPartie()` qui charge la
+  sauvegarde "auto" si elle existe ou démarre une partie neuve sinon
+- `js/main.js` — démarrage désormais asynchrone (attend
+  `demarrerPartie()` avant de lancer la boucle), raccourcis clavier
+  temporaires **S** (sauvegarder), **L** (charger), **Suppr**
+  (supprimer) sur l'emplacement "manuel" — en attendant de vrais
+  boutons dans `ui.js`
+
+### Vérifications effectuées
+
+Au-delà des tests unitaires habituels (syntaxe, collecte, API de
+sauvegarde), un test bout-en-bout a simulé **deux sessions
+successives séparées** (l'équivalent de fermer et rouvrir le jeu) :
+collecte de ressources en session 1, sauvegarde automatique forcée,
+puis nouvelle session repartant de zéro — la partie a été
+correctement restaurée avec le même stock de ressources et les mêmes
+nœuds sur la carte. Un bug de robustesse a aussi été détecté et
+corrigé au passage : un `delta` de temps invalide contournait
+silencieusement la vérification d'intervalle de la sauvegarde
+automatique (comparaison avec `NaN` toujours fausse) ; une garde
+défensive a été ajoutée des deux côtés (système de temps et
+sauvegarde automatique).
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :
