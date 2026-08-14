@@ -304,6 +304,47 @@ la fois), pas de menu de combat ni d'unités rares.
 
 ---
 
+## État du projet — VAGUE 7 (ordres de récolte) terminée
+
+Les ouvrières (et nourrices) peuvent désormais recevoir de vrais
+ordres de récolte, avec un cycle complet et automatique.
+
+### Ce qui a été ajouté
+
+- `js/resources.js` — `donnerOrdreRecolte()`, cycle d'état complet
+  (`versRessource` → `recolte` → `versNid` → `depose`), retour
+  automatique sur le même nœud tant qu'il n'est pas épuisé, file
+  d'ordres (`fileOrdres`) permettant d'empiler plusieurs nœuds à la
+  suite, et `annulerOrdres()`
+- `js/units.js` — `capaciteTransport` par type (20 pour l'Ouvrière, 8
+  pour la Nourrice, 0 pour les unités de combat, qui ne peuvent donc
+  pas recevoir d'ordre de récolte), affichage de la tâche actuelle
+  au-dessus de l'unité sélectionnée, petit indicateur de cargaison
+  coloré selon la ressource transportée
+- `js/input.js` — taper un nœud avec des unités capables de
+  transporter sélectionnées leur donne l'ordre d'y aller ; **sans
+  sélection ou avec des unités de combat, l'ancienne collecte
+  instantanée reste disponible telle quelle**
+- `js/main.js` — raccourci **C** pour annuler les ordres des unités
+  sélectionnées (récolte et combat), en attendant un vrai bouton
+  dans `ui.js`
+- `js/storage.js` — les nœuds de ressource ont désormais un
+  identifiant stable, inclus dans la sauvegarde (nécessaire pour
+  qu'un ordre de récolte en cours retrouve son nœud après un
+  rechargement)
+
+### Vérifications effectuées
+
+Testé de bout en bout : l'ancienne collecte au tap fonctionne
+toujours à l'identique sans sélection, un ordre de récolte complet
+aboutit à un dépôt exact de la capacité de transport, l'unité
+reprend automatiquement un second cycle sans nouvel ordre, plusieurs
+nœuds peuvent être empilés dans la file, l'annulation vide bien la
+file et repasse l'unité en inactif, et une unité de combat sans
+capacité de transport se voit refuser tout ordre de récolte.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

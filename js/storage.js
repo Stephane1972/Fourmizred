@@ -64,6 +64,7 @@ function construireInstantane() {
     },
     ressources: { ...etat.ressources },
     noeudsRessource: noeudsRessource.map((n) => ({
+      id: n.id,
       type: n.type,
       x: n.x,
       y: n.y,

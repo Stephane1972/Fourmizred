@@ -70,7 +70,16 @@ function initialiserInput() {
       } else {
         const noeud = trouverNoeudSous(point.x, point.y);
         if (noeud) {
-          collecterRessource(noeud);
+          const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
+          const recolteuses = selectionnees.filter((u) => TYPES_UNITE[u.type].capaciteTransport > 0);
+          if (recolteuses.length > 0) {
+            for (const u of recolteuses) donnerOrdreRecolte(u, noeud);
+          } else {
+            // Aucune unité sélectionnée capable de transporter (ou
+            // aucune sélection du tout) : comportement précédent
+            // conservé, la colonie prélève directement dans le stock.
+            collecterRessource(noeud);
+          }
         } else {
           for (const u of etat.unites) u.selectionnee = false;
           ajouterRetourTactile(point.x, point.y);

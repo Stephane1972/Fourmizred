@@ -125,6 +125,7 @@ function boucle(horodatageActuel) {
   mettreAJourTemps(horodatageActuel);
   mettreAJourAutoSave(temps.delta);
   mettreAJourProduction(temps.delta);
+  mettreAJourRecolte(temps.delta);
   mettreAJourCombat(temps.delta);
   rendreScene(temps);
 
@@ -169,6 +170,12 @@ window.addEventListener('keydown', (e) => {
     console.log(succes
       ? `${TYPES_UNITE[typeUnite].label} mise en production (${TYPES_BATIMENT_PRODUCTION[typeBatiment].label}).`
       : `Impossible de produire ${TYPES_UNITE[typeUnite].label} pour le moment.`);
+  } else if (touche === 'c') {
+    // Annule tous les ordres (récolte et combat) des unités
+    // actuellement sélectionnées — provisoire, sera un bouton dans ui.js.
+    const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
+    for (const u of selectionnees) annulerOrdres(u);
+    console.log(`Ordres annulés pour ${selectionnees.length} unité(s).`);
   }
 });
 

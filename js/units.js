@@ -16,6 +16,7 @@ const TYPES_UNITE = {
     degats: 2,
     portee: 14,
     cadenceAttaque: 1.5,
+    capaciteTransport: 20,
     capacite: 'Peut collecter les ressources de la carte',
     couleur: '#8a6a45'
   },
@@ -28,6 +29,7 @@ const TYPES_UNITE = {
     degats: 1,
     portee: 14,
     cadenceAttaque: 1.8,
+    capaciteTransport: 8,
     capacite: 'Accélère la croissance des larves à proximité',
     couleur: '#c9a8d8'
   },
@@ -40,6 +42,7 @@ const TYPES_UNITE = {
     degats: 3,
     portee: 16,
     cadenceAttaque: 1.2,
+    capaciteTransport: 0,
     capacite: 'Grand rayon de vision, repère les menaces au loin',
     couleur: '#e0c69a'
   },
@@ -52,6 +55,7 @@ const TYPES_UNITE = {
     degats: 12,
     portee: 18,
     cadenceAttaque: 0.9,
+    capaciteTransport: 0,
     capacite: 'Morsure acide, dégâts bonus contre unités légères',
     couleur: '#c0402a'
   },
@@ -64,6 +68,7 @@ const TYPES_UNITE = {
     degats: 16,
     portee: 20,
     cadenceAttaque: 1.0,
+    capaciteTransport: 0,
     capacite: 'Mandibules puissantes, dégâts bonus contre bâtiments',
     couleur: '#5a3820'
   }
@@ -101,9 +106,17 @@ function creerInstanceUnite(typeUnite, x, y, faction) {
     vitesse: def.vitesse,
     faction,
     selectionnee: false,
-    ordre: null,        // null | 'attaquer'
+    ordre: null,        // null | 'attaquer'  (combat.js)
     cibleId: null,       // id de l'unité ciblée par un ordre d'attaque
     cooldownAttaque: 0,
+    // Récolte (voir resources.js)
+    fileOrdres: [],       // [{ type: 'recolter', noeudId }]
+    etatRecolte: 'idle',  // idle | versRessource | recolte | versNid | depose
+    noeudCibleId: null,
+    cargo: 0,
+    typeCargo: null,
+    minuteurRecolte: 0,
+    tacheActuelle: 'Inactive',
     phaseIdle: Math.random() * Math.PI * 2
   };
 }
@@ -140,6 +153,25 @@ function dessinerUnite(ctx, u, temps) {
     ctx.beginPath();
     ctx.ellipse(u.x, u.y, 12, 8, 0, 0, Math.PI * 2);
     ctx.stroke();
+
+    // Tâche actuelle — affichée seulement pour l'unité sélectionnée,
+    // pour ne pas encombrer l'écran quand plusieurs unités sont visibles.
+    if (u.tacheActuelle) {
+      ctx.fillStyle = '#f0e0c0';
+      ctx.font = `${10.5 / etat.camera.zoom}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.fillText(u.tacheActuelle, u.x, u.y - 20 / etat.camera.zoom);
+    }
+  }
+
+  // Cargaison transportée, visible sur toutes les unités (pas
+  // seulement la sélectionnée) pour repérer d'un coup d'œil qui
+  // ramène des ressources.
+  if (u.cargo > 0 && u.typeCargo && TYPES_RESSOURCE[u.typeCargo]) {
+    ctx.fillStyle = TYPES_RESSOURCE[u.typeCargo].couleurPrincipale;
+    ctx.beginPath();
+    ctx.ellipse(u.x, u.y - 12 / etat.camera.zoom, 3.5, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   const respiration = Math.sin(temps.total * 2 + u.phaseIdle) * 1.4;
