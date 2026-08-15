@@ -162,6 +162,7 @@ function dessinerBatimentProduction(ctx, b) {
 function dessinerBatimentsProduction(ctx) {
   const zone = zoneVisibleMonde(80);
   for (const b of etat.batiments) {
+    if (!TYPES_BATIMENT_PRODUCTION[b.type]) continue; // ignore les défenses (voir defenses.js)
     if (b.x < zone.x1 || b.x > zone.x2 || b.y < zone.y1 || b.y > zone.y2) continue;
     dessinerBatimentProduction(ctx, b);
   }

@@ -223,6 +223,7 @@ function rendreScene(temps) {
   }
 
   dessinerBatimentsProduction(ctx);
+  dessinerDefenses(ctx);
   dessinerNidEnnemi(ctx);
   dessinerFourmiliere(ctx, temps);
   dessinerUnites(ctx, temps);

@@ -55,34 +55,45 @@ function initialiserInput() {
     // Si le pointeur n'a quasiment pas bougé, c'est un tap/clic simple.
     if (pointeursActifs.size === 1 && distanceTotaleGlissee < SEUIL_TAP) {
       const point = ecranVersMonde(e.clientX, e.clientY);
-      const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
-      const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
 
-      if (uniteAlliee) {
-        // Sélectionne uniquement cette unité (remplace la sélection précédente)
-        for (const u of etat.unites) u.selectionnee = false;
-        uniteAlliee.selectionnee = true;
-      } else if (uniteEnnemie) {
-        // Toutes les unités alliées actuellement sélectionnées reçoivent
-        // l'ordre d'attaquer la cible touchée.
-        const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
-        for (const u of selectionnees) ordonnerAttaque(u, uniteEnnemie.id);
+      // Priorité absolue : un mode de placement de défense est actif,
+      // ce tap la construit et rien d'autre ne se passe ce coup-ci.
+      if (modePlacementDefense) {
+        placerDefense(modePlacementDefense, point.x, point.y);
+        modePlacementDefense = null;
       } else {
-        const noeud = trouverNoeudSous(point.x, point.y);
-        if (noeud) {
-          const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
-          const recolteuses = selectionnees.filter((u) => TYPES_UNITE[u.type].capaciteTransport > 0);
-          if (recolteuses.length > 0) {
-            for (const u of recolteuses) donnerOrdreRecolte(u, noeud);
-          } else {
-            // Aucune unité sélectionnée capable de transporter (ou
-            // aucune sélection du tout) : comportement précédent
-            // conservé, la colonie prélève directement dans le stock.
-            collecterRessource(noeud);
-          }
-        } else {
+        const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
+        const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
+
+        if (uniteAlliee) {
+          // Sélectionne uniquement cette unité (remplace la sélection précédente)
           for (const u of etat.unites) u.selectionnee = false;
-          ajouterRetourTactile(point.x, point.y);
+          uniteAlliee.selectionnee = true;
+        } else if (uniteEnnemie) {
+          // Toutes les unités alliées actuellement sélectionnées reçoivent
+          // l'ordre d'attaquer la cible touchée.
+          const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
+          for (const u of selectionnees) ordonnerAttaque(u, uniteEnnemie.id);
+        } else {
+          const defense = trouverDefenseSous(point.x, point.y);
+          const noeud = !defense ? trouverNoeudSous(point.x, point.y) : null;
+          if (defense) {
+            reparerDefense(defense);
+          } else if (noeud) {
+            const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
+            const recolteuses = selectionnees.filter((u) => TYPES_UNITE[u.type].capaciteTransport > 0);
+            if (recolteuses.length > 0) {
+              for (const u of recolteuses) donnerOrdreRecolte(u, noeud);
+            } else {
+              // Aucune unité sélectionnée capable de transporter (ou
+              // aucune sélection du tout) : comportement précédent
+              // conservé, la colonie prélève directement dans le stock.
+              collecterRessource(noeud);
+            }
+          } else {
+            for (const u of etat.unites) u.selectionnee = false;
+            ajouterRetourTactile(point.x, point.y);
+          }
         }
       }
     }

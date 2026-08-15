@@ -133,6 +133,7 @@ function boucle(horodatageActuel) {
     mettreAJourProduction(temps.delta);
     mettreAJourRecolte(temps.delta);
     mettreAJourCombat(temps.delta);
+    mettreAJourDefenses(temps.delta);
   }
 
   rendreScene(temps);
@@ -184,8 +185,23 @@ window.addEventListener('keydown', (e) => {
     const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
     for (const u of selectionnees) annulerOrdres(u);
     console.log(`Ordres annulés pour ${selectionnees.length} unité(s).`);
+  } else if (RACCOURCIS_DEFENSE[touche]) {
+    activerPlacementDefense(RACCOURCIS_DEFENSE[touche]);
   }
 });
+
+// Raccourcis de test pour armer le mode de placement d'une défense —
+// provisoire, sera un menu de construction dans ui.js.
+//   6 = Mur de résine        9 = Piège à mandibules
+//   7 = Porte blindée        0 = Tourelle à acide
+//   8 = Lance-venin
+const RACCOURCIS_DEFENSE = {
+  '6': 'murResine',
+  '7': 'porteBlindee',
+  '8': 'lanceVenin',
+  '9': 'piegeMandibules',
+  '0': 'tourelleAcide'
+};
 
 // Raccourcis de test pour la production — provisoire, sera remplacé
 // par le vrai menu de production de ui.js.

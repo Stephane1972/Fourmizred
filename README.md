@@ -392,6 +392,57 @@ comme le reste du projet depuis la vague 1.
 
 ---
 
+## État du projet — VAGUE 9 (bâtiments défensifs) terminée
+
+Cinq structures défensives constructibles où vous voulez sur la
+carte, avec un vrai combat automatique.
+
+### Ce qui a été ajouté
+
+- `js/defenses.js` (nouveau) — Mur de résine et Porte blindée
+  (passives, PV élevés) ; Lance-venin, Piège à mandibules et
+  Tourelle à acide (attaque automatique : chacune cible l'ennemi le
+  plus proche à sa portée, respecte son propre temps de rechargement,
+  et cesse de tirer une fois épuisée) ; réparation avec les
+  matériaux (5 PV restaurés par matériau dépensé, jamais plus que
+  nécessaire ni plus que le stock disponible)
+- `js/input.js` — touches 6 à 0 pour armer le placement d'une
+  défense (provisoire, en attendant un menu dans `ui.js`), tap
+  suivant sur la carte pour la construire ; taper une défense
+  alliée endommagée la répare directement
+- `js/renderer.js` — rendu des défenses (murs/portes en rectangles,
+  tourelles en cercles avec un petit canon si elles attaquent),
+  barre de progression pendant la construction, barre de vie une
+  fois endommagées
+
+### Bug détecté et corrigé en cours de route
+
+`dessinerBatimentsProduction()` (vague 5) parcourait tout
+`etat.batiments` sans distinguer les bâtiments de production des
+nouvelles défenses qui partagent désormais le même tableau — ça
+plantait au premier placement d'une défense. Corrigé en filtrant
+explicitement sur `TYPES_BATIMENT_PRODUCTION[b.type]`.
+
+### Sauvegarde IndexedDB des défenses
+
+Comme les défenses vivent dans `etat.batiments` — déjà couvert
+intégralement par `storage.js` depuis la vague 5 — leur sauvegarde
+n'a nécessité **aucune modification de `storage.js`**. Vérifié
+explicitement par un test dédié plutôt que supposé : sauvegarde,
+rechargement, et comparaison exacte du type, des PV et de la
+position de chaque défense.
+
+### Vérifications effectuées
+
+Testé de bout en bout : coût prélevé au placement, structure
+inerte pendant sa construction, fonctionnelle une fois terminée,
+tourelle qui touche une cible à portée mais pas hors de portée,
+réparation qui restaure les PV en consommant les matériaux au bon
+tarif et sans dépasser le plafond, destruction propre à 0 PV, et
+sauvegarde/rechargement fidèle via IndexedDB.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :
