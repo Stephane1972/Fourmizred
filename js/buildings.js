@@ -21,13 +21,13 @@ const TYPES_BATIMENT_PRODUCTION = {
   },
   caserne: {
     label: 'Caserne',
-    unitesProduisibles: ['fourmiRouge', 'fourmiCharpentiere'],
+    unitesProduisibles: ['fourmiRouge', 'fourmiCharpentiere', 'fourmiLegionnaire', 'fourmiBouledogue', 'fourmiBalleDeFusil', 'soldatGeant'],
     rayon: 46,
     couleur: '#4a2818'
   },
   ecoleEclaireuses: {
     label: 'École des éclaireuses',
-    unitesProduisibles: ['eclaireuse'],
+    unitesProduisibles: ['eclaireuse', 'fourmiVolante'],
     rayon: 38,
     couleur: '#3a5040'
   }

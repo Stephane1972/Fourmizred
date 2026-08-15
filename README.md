@@ -443,6 +443,54 @@ sauvegarde/rechargement fidèle via IndexedDB.
 
 ---
 
+## État du projet — VAGUE 10 (unités avancées) terminée
+
+Dix nouvelles unités, niveaux 3 à 5, chacune avec coût, statistiques
+complètes, capacité, **faiblesse** (nouveau champ) et **bâtiment
+requis** (nouveau champ).
+
+### Niveau 3
+Fourmi tisserande, Fourmi légionnaire, Fourmi chimiste, Fourmi volante
+
+### Niveau 4
+Fourmi bouledogue, Fourmi piège, Fourmi balle de fusil, Soldat géant
+
+### Niveau 5
+Fourmi explosive, Reine guerrière
+
+### Ce qui a été ajouté
+
+- `js/units.js` — les 10 unités, avec une progression de puissance
+  vérifiée par palier (score PV + dégâts×3 moyen : 153 en niveau 3,
+  271 en niveau 4, 398 en niveau 5), la Reine guerrière culminant
+  avec les PV les plus élevés du jeu
+- `js/buildings.js` — Fourmi légionnaire, Fourmi bouledogue, Fourmi
+  balle de fusil et Soldat géant ajoutées à la Caserne ; Fourmi
+  volante ajoutée à l'École des éclaireuses — ces 5 unités sont donc
+  **réellement productibles dès maintenant**, testé en conditions
+  réelles jusqu'à l'apparition effective d'une unité
+
+### Limite assumée : 5 unités non encore productibles
+
+Fourmi tisserande, Fourmi chimiste, Fourmi piège, Fourmi explosive
+et Reine guerrière référencent un `batimentRequis: 'chambreSpecialistes'`
+— un bâtiment prévu au plan d'origine mais jamais encore construit.
+Elles sont donc entièrement définies (stats, capacité, faiblesse)
+mais aucun bâtiment actuel ne permet de les produire. Une prochaine
+vague pourra construire cette Chambre des spécialistes pour les
+débloquer.
+
+### Vérifications effectuées
+
+Testé de bout en bout : présence et complétude des champs pour les
+10 unités, progression de puissance respectée par palier, mise en
+production réussie des 5 unités rattachées à des bâtiments
+existants, apparition réelle d'une unité avec ses statistiques
+exactes, et confirmation explicite que les 5 autres restent non
+productibles pour l'instant (comportement attendu, pas un bug).
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

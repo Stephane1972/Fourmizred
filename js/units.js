@@ -73,6 +73,177 @@ const TYPES_UNITE = {
     couleur: '#5a3820'
   },
 
+  // ---------------------------------------------------------
+  // UNITÉS AVANCÉES — niveaux 3 à 5, du plus faible au plus puissant.
+  // Chacune ajoute un champ `faiblesse` (nouveau) et `batimentRequis`
+  // (nouveau) en plus des statistiques habituelles. `batimentRequis`
+  // référence soit un bâtiment déjà construit (caserne, nurserie,
+  // ecoleEclaireuses), soit "chambreSpecialistes" — un bâtiment prévu
+  // au plan d'origine mais pas encore construit à ce stade : ces
+  // unités-là sont donc définies mais pas encore productibles.
+  // ---------------------------------------------------------
+
+  // --- Niveau 3 ---
+  fourmiTisserande: {
+    label: 'Fourmi tisserande',
+    cout: { nourriture: 45, materiaux: 30 },
+    tempsProduction: 12,
+    pv: 110,
+    vitesse: 65,
+    degats: 10,
+    portee: 16,
+    cadenceAttaque: 1.2,
+    capaciteTransport: 15,
+    capacite: 'Combat et récolte à la fois ; tisse de la soie pour renforcer les structures alliées (effet à venir)',
+    faiblesse: 'PV modestes pour son coût, mal adaptée au combat prolongé',
+    batimentRequis: 'chambreSpecialistes',
+    couleur: '#3a6a4a'
+  },
+  fourmiLegionnaire: {
+    label: 'Fourmi légionnaire',
+    cout: { nourriture: 50, materiaux: 20 },
+    tempsProduction: 16,
+    pv: 120,
+    vitesse: 60,
+    degats: 16,
+    portee: 20,
+    cadenceAttaque: 0.9,
+    capaciteTransport: 0,
+    capacite: 'Discipline de formation : efficace en groupe, coordonnée au combat',
+    faiblesse: 'Perd son efficacité si isolée du reste de sa colonne',
+    batimentRequis: 'caserne',
+    couleur: '#6a3a2a'
+  },
+  fourmiChimiste: {
+    label: 'Fourmi chimiste',
+    cout: { nourriture: 45, materiaux: 35 },
+    tempsProduction: 15,
+    pv: 100,
+    vitesse: 55,
+    degats: 24,
+    portee: 24,
+    cadenceAttaque: 1.4,
+    capaciteTransport: 0,
+    capacite: 'Projection chimique à distance, ignore une partie de la résistance adverse',
+    faiblesse: 'Peu de PV et cadence de tir lente : vulnérable au corps-à-corps rapide',
+    batimentRequis: 'chambreSpecialistes',
+    couleur: '#8a7a2a'
+  },
+  fourmiVolante: {
+    label: 'Fourmi volante',
+    cout: { nourriture: 40 },
+    tempsProduction: 10,
+    pv: 90,
+    vitesse: 130,
+    degats: 14,
+    portee: 18,
+    cadenceAttaque: 1.0,
+    capaciteTransport: 5,
+    capacite: 'Vole directement vers sa cible, la plus rapide de toutes les unités',
+    faiblesse: 'Peu de PV, cible facile pour les défenses à longue portée',
+    batimentRequis: 'ecoleEclaireuses',
+    couleur: '#c9c9e0',
+    tailleMultiplicateur: 0.9
+  },
+
+  // --- Niveau 4 ---
+  fourmiBouledogue: {
+    label: 'Fourmi bouledogue',
+    cout: { nourriture: 70, materiaux: 40 },
+    tempsProduction: 20,
+    pv: 200,
+    vitesse: 50,
+    degats: 28,
+    portee: 16,
+    cadenceAttaque: 1.0,
+    capaciteTransport: 0,
+    capacite: 'Morsure écrasante, parmi les plus robustes au corps-à-corps',
+    faiblesse: 'Très lente, facile à contourner ou à harceler à distance',
+    batimentRequis: 'caserne',
+    couleur: '#4a1a1a',
+    tailleMultiplicateur: 1.3
+  },
+  fourmiPiege: {
+    label: 'Fourmi piège',
+    cout: { materiaux: 60 },
+    tempsProduction: 14,
+    pv: 70,
+    vitesse: 20,
+    degats: 35,
+    portee: 18,
+    cadenceAttaque: 2.2,
+    capaciteTransport: 0,
+    capacite: 'Embuscade : dégâts d\'ouverture très élevés au premier contact',
+    faiblesse: 'Très peu de PV, ne survit pas à un combat prolongé une fois repérée',
+    batimentRequis: 'chambreSpecialistes',
+    couleur: '#2a2418'
+  },
+  fourmiBalleDeFusil: {
+    label: 'Fourmi balle de fusil',
+    cout: { nourriture: 90, materiaux: 20 },
+    tempsProduction: 22,
+    pv: 170,
+    vitesse: 75,
+    degats: 32,
+    portee: 16,
+    cadenceAttaque: 1.1,
+    capaciteTransport: 0,
+    capacite: 'Piqûre parmi les plus douloureuses de la nature, dégâts élevés et fiables',
+    faiblesse: 'Coût élevé en nourriture, longue à produire',
+    batimentRequis: 'caserne',
+    couleur: '#8a1a1a'
+  },
+  soldatGeant: {
+    label: 'Soldat géant',
+    cout: { nourriture: 100, materiaux: 60 },
+    tempsProduction: 26,
+    pv: 280,
+    vitesse: 40,
+    degats: 26,
+    portee: 22,
+    cadenceAttaque: 1.3,
+    capaciteTransport: 0,
+    capacite: 'Gabarit imposant, la plus grande réserve de PV de toutes les unités classiques',
+    faiblesse: 'Très lent et coûteux, cible prioritaire évidente pour l\'adversaire',
+    batimentRequis: 'caserne',
+    couleur: '#3a2818',
+    tailleMultiplicateur: 1.6
+  },
+
+  // --- Niveau 5 ---
+  fourmiExplosive: {
+    label: 'Fourmi explosive',
+    cout: { nourriture: 60, materiaux: 80 },
+    tempsProduction: 18,
+    pv: 50,
+    vitesse: 70,
+    degats: 80,
+    portee: 14,
+    cadenceAttaque: 5,
+    capaciteTransport: 0,
+    capacite: 'Dégâts d\'un seul coup les plus élevés du jeu — l\'auto-destruction au contact n\'est pas encore codée : elle combat pour l\'instant comme une unité normale, très fragile',
+    faiblesse: 'PV extrêmement faibles, meurt en un ou deux coups adverses',
+    batimentRequis: 'chambreSpecialistes',
+    couleur: '#c04020',
+    tailleMultiplicateur: 0.85
+  },
+  reineGuerriere: {
+    label: 'Reine guerrière',
+    cout: { nourriture: 200, materiaux: 150 },
+    tempsProduction: 60,
+    pv: 400,
+    vitesse: 35,
+    degats: 35,
+    portee: 24,
+    cadenceAttaque: 1.0,
+    capaciteTransport: 0,
+    capacite: 'Unité d\'élite ultime : PV et dégâts les plus élevés du jeu',
+    faiblesse: 'Coût et temps de production prohibitifs ; perte lourde de conséquence si elle tombe',
+    batimentRequis: 'chambreSpecialistes',
+    couleur: '#4a1a3a',
+    tailleMultiplicateur: 1.9
+  },
+
   // Menaces sauvages — ne sont produites par aucun bâtiment, seulement
   // posées sur la carte au démarrage (voir combat.js). Ne recherchent
   // pas activement à s'entretuer avec la colonie rivale : elles n'en
