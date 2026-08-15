@@ -42,7 +42,8 @@ const etat = {
   batiments: [],
   unites: [],
   missionActuelle: null,
-  technologies: []
+  technologies: [],
+  resultatPartie: null // null | 'victoire' | 'defaite'
 };
 
 // Réinitialise l'état à une nouvelle partie (sera appelé par
@@ -61,4 +62,8 @@ function nouvellePartie() {
   etat.unites.length = 0;
   etat.missionActuelle = null;
   etat.technologies.length = 0;
+  etat.resultatPartie = null;
+  // fourmiliere est défini dans renderer.js, chargé avant que cette
+  // fonction ne soit réellement appelée (au démarrage, via storage.js)
+  fourmiliere.pv = fourmiliere.pvMax;
 }

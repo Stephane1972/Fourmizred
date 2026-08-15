@@ -58,14 +58,16 @@ function genererTerrain() {
 }
 
 // ---------------------------------------------------------
-// FOURMILIÈRE — cœur de la colonie, au centre de la carte.
-// Purement visuelle à ce stade ; deviendra un vrai bâtiment
-// interactif (production, PV...) avec buildings.js.
+// FOURMILIÈRE — cœur de la colonie, au centre de la carte. Possède
+// désormais des PV : sa destruction entraîne la défaite (voir
+// combat.js → verifierFinDePartie).
 // ---------------------------------------------------------
 const fourmiliere = {
   x: etat.carte.largeur / 2,
   y: etat.carte.hauteur / 2,
-  rayon: 70
+  rayon: 70,
+  pv: 500,
+  pvMax: 500
 };
 
 function dessinerFourmiliere(ctx, temps) {
@@ -98,6 +100,15 @@ function dessinerFourmiliere(ctx, temps) {
   ctx.font = `${14 / etat.camera.zoom}px Arial`;
   ctx.textAlign = 'center';
   ctx.fillText('Fourmilière', x, y - rayon - 14 / etat.camera.zoom);
+
+  // Barre de vie, affichée seulement une fois blessée
+  if (fourmiliere.pv < fourmiliere.pvMax) {
+    const largeur = rayon * 1.3;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(x - largeur / 2, y + rayon + 6 / etat.camera.zoom, largeur, 5 / etat.camera.zoom);
+    ctx.fillStyle = fourmiliere.pv / fourmiliere.pvMax > 0.3 ? '#3ae03a' : '#e0503c';
+    ctx.fillRect(x - largeur / 2, y + rayon + 6 / etat.camera.zoom, largeur * (fourmiliere.pv / fourmiliere.pvMax), 5 / etat.camera.zoom);
+  }
 }
 
 // ---------------------------------------------------------
@@ -221,6 +232,31 @@ function rendreScene(temps) {
   ctx.restore();
 
   dessinerSurcoucheDebug(temps);
+  dessinerEcranFinDePartie();
+}
+
+// Voile sombre + message centré, dessiné par-dessus toute la scène
+// (en coordonnées écran, donc non affecté par la caméra) une fois
+// que etat.resultatPartie est défini par combat.js.
+function dessinerEcranFinDePartie() {
+  if (!etat.resultatPartie) return;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const victoire = etat.resultatPartie === 'victoire';
+  ctx.textAlign = 'center';
+
+  ctx.fillStyle = victoire ? '#3ae03a' : '#e0503c';
+  ctx.font = 'bold 42px Arial';
+  ctx.fillText(victoire ? 'VICTOIRE' : 'DÉFAITE', canvas.width / 2, canvas.height / 2 - 10);
+
+  ctx.fillStyle = '#f0e0c0';
+  ctx.font = '15px Arial';
+  ctx.fillText(
+    victoire ? 'Toutes les menaces ont été éliminées.' : 'La fourmilière a été détruite.',
+    canvas.width / 2, canvas.height / 2 + 26
+  );
 }
 
 // Petit panneau de diagnostic, utile pendant le développement — sera

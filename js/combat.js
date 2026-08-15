@@ -25,9 +25,12 @@ function infligerDegats(cible, degats) {
 // ---------------------------------------------------------
 function mettreAJourCombat(delta) {
   deplacerUnitesEnAttaque(delta);
+  deplacerMenacesSauvages(delta);
   refroidirCooldowns(delta);
   resoudreCombats();
+  resoudreAttaquesFourmiliere();
   nettoyerUnitesMortes();
+  verifierFinDePartie();
 }
 
 // Une unité avec un ordre d'attaque avance vers sa cible tant qu'elle
@@ -155,4 +158,95 @@ function dessinerNidEnnemi(ctx) {
   ctx.font = `${14 / etat.camera.zoom}px Arial`;
   ctx.textAlign = 'center';
   ctx.fillText('Colonie rivale', x, y - rayon - 14 / etat.camera.zoom);
+}
+
+// ---------------------------------------------------------
+// MENACES SAUVAGES — araignées et scarabées, indépendantes de la
+// colonie rivale. Contrairement à celle-ci (toujours statique à ce
+// stade, en attendant ai.js), elles rôdent activement : elles
+// foncent sur la première unité alliée qui passe à leur portée de
+// détection, et se dirigent vers la fourmilière si rien à proximité
+// — c'est ce qui rend une défaite par destruction de la fourmilière
+// réellement possible dès cette vague.
+// ---------------------------------------------------------
+const DETECTION_MENACE = 260;
+const DISTANCE_MIN_NIDS = 350;
+
+function genererMenacesSauvages() {
+  const composition = ['araignee', 'araignee', 'araignee', 'scarabee', 'scarabee', 'scarabee'];
+  for (const type of composition) {
+    let x, y, essais = 0;
+    do {
+      x = 200 + Math.random() * (etat.carte.largeur - 400);
+      y = 200 + Math.random() * (etat.carte.hauteur - 400);
+      essais++;
+    } while (
+      essais < 30 &&
+      (distance(x, y, fourmiliere.x, fourmiliere.y) < DISTANCE_MIN_NIDS ||
+       distance(x, y, nidEnnemi.x, nidEnnemi.y) < 250)
+    );
+    etat.unites.push(creerInstanceUnite(type, x, y, 'ennemi'));
+  }
+}
+
+function estMenaceSauvage(unite) {
+  return unite.type === 'araignee' || unite.type === 'scarabee';
+}
+
+function deplacerMenacesSauvages(delta) {
+  for (const c of etat.unites) {
+    if (c.pv <= 0 || c.faction !== 'ennemi' || !estMenaceSauvage(c)) continue;
+    const def = TYPES_UNITE[c.type];
+
+    let cible = null, meilleureDist = DETECTION_MENACE;
+    for (const j of etat.unites) {
+      if (j.faction !== 'joueur' || j.pv <= 0) continue;
+      const d = distance(c.x, c.y, j.x, j.y);
+      if (d < meilleureDist) { meilleureDist = d; cible = j; }
+    }
+
+    const cibleX = cible ? cible.x : fourmiliere.x;
+    const cibleY = cible ? cible.y : fourmiliere.y;
+    const porteeArret = cible ? def.portee : fourmiliere.rayon;
+    const d = distance(c.x, c.y, cibleX, cibleY);
+    if (d > porteeArret) {
+      const angle = Math.atan2(cibleY - c.y, cibleX - c.x);
+      const pas = Math.min(def.vitesse * delta, d - porteeArret + 1);
+      c.x += Math.cos(angle) * pas;
+      c.y += Math.sin(angle) * pas;
+    }
+  }
+}
+
+// ---------------------------------------------------------
+// FOURMILIÈRE DESTRUCTIBLE — toute unité ennemie à portée lui inflige
+// ses dégâts, exactement comme contre une unité (même cooldown).
+// ---------------------------------------------------------
+function resoudreAttaquesFourmiliere() {
+  if (fourmiliere.pv <= 0) return;
+  for (const u of etat.unites) {
+    if (u.faction !== 'ennemi' || u.pv <= 0) continue;
+    const def = TYPES_UNITE[u.type];
+    const d = distance(u.x, u.y, fourmiliere.x, fourmiliere.y);
+    if (d <= fourmiliere.rayon + 8 && u.cooldownAttaque <= 0) {
+      fourmiliere.pv = Math.max(0, fourmiliere.pv - def.degats);
+      u.cooldownAttaque = def.cadenceAttaque;
+    }
+  }
+}
+
+// ---------------------------------------------------------
+// VICTOIRE / DÉFAITE
+// ---------------------------------------------------------
+function verifierFinDePartie() {
+  if (etat.resultatPartie) return;
+
+  if (fourmiliere.pv <= 0) {
+    etat.resultatPartie = 'defaite';
+    return;
+  }
+  const hostilesRestants = etat.unites.filter((u) => u.faction === 'ennemi' && u.pv > 0).length;
+  if (hostilesRestants === 0) {
+    etat.resultatPartie = 'victoire';
+  }
 }

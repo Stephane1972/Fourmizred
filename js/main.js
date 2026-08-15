@@ -124,9 +124,17 @@ function boucle(horodatageActuel) {
 
   mettreAJourTemps(horodatageActuel);
   mettreAJourAutoSave(temps.delta);
-  mettreAJourProduction(temps.delta);
-  mettreAJourRecolte(temps.delta);
-  mettreAJourCombat(temps.delta);
+
+  // Une fois la partie gagnée ou perdue, on fige la simulation
+  // (plus de production, récolte ni combat) mais la scène reste
+  // rendue pour que le champ de bataille final reste visible sous
+  // le message de victoire/défaite.
+  if (!etat.resultatPartie) {
+    mettreAJourProduction(temps.delta);
+    mettreAJourRecolte(temps.delta);
+    mettreAJourCombat(temps.delta);
+  }
+
   rendreScene(temps);
 
   requestAnimationFrame(boucle);

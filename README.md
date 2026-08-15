@@ -345,6 +345,53 @@ capacité de transport se voit refuser tout ordre de récolte.
 
 ---
 
+## État du projet — VAGUE 8 (menaces sauvages + fin de partie) terminée
+
+Les mécaniques de combat de base (sélection, ordre d'attaque,
+dégâts, PV, portée, mort) existaient déjà depuis la vague 6 et ont
+été confirmées fonctionnelles avec les nouvelles créatures. Cette
+vague ajoute la vraie nouveauté : des menaces autonomes et un
+objectif de victoire/défaite.
+
+### Ce qui a été ajouté
+
+- `js/units.js` — **Araignée** (150 PV, 20 dégâts, lente, redoutable)
+  et **Scarabée** (80 PV, 10 dégâts, carapace résistante), rendues
+  plus grandes que les fourmis ; anneau rouge sur toute cible
+  actuellement visée par un ordre d'attaque
+- `js/combat.js` — `genererMenacesSauvages()` (3 araignées + 3
+  scarabées, à l'écart des deux nids), `deplacerMenacesSauvages()` :
+  contrairement à la colonie rivale (toujours statique, en attendant
+  `ai.js`), elles rôdent activement — foncent sur la première unité
+  alliée détectée à proximité, ou vers la fourmilière sinon ;
+  `resoudreAttaquesFourmiliere()` la rend réellement destructible ;
+  `verifierFinDePartie()` déclenche la victoire (plus aucune unité
+  ennemie vivante) ou la défaite (fourmilière à 0 PV)
+- `js/renderer.js` — barre de vie sur la fourmilière une fois
+  blessée, écran de fin de partie (voile sombre + message centré)
+- `js/main.js` — la simulation se fige à la fin de partie (plus de
+  production/récolte/combat), mais le rendu continue pour garder le
+  champ de bataille visible sous le message
+- `js/storage.js` — PV de la fourmilière et résultat de partie inclus
+  dans la sauvegarde, avec compatibilité pour les sauvegardes plus
+  anciennes qui n'ont pas ces champs
+
+### Vérifications effectuées
+
+Testé de bout en bout : présence exacte des 3 araignées, 3
+scarabées et des 5 unités de la colonie rivale au démarrage,
+fourmilière à 500/500 PV, une araignée qui se déplace réellement
+vers une unité alliée détectée à proximité, des PV de fourmilière
+qui baissent effectivement au contact d'une menace, déclenchement
+correct de la défaite à 0 PV de fourmilière, et déclenchement
+correct de la victoire (avec nettoyage du tableau d'unités) quand
+plus aucun ennemi n'est vivant.
+
+Aucun serveur ni connexion Internet requis — tout tourne en local,
+comme le reste du projet depuis la vague 1.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

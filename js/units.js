@@ -71,6 +71,39 @@ const TYPES_UNITE = {
     capaciteTransport: 0,
     capacite: 'Mandibules puissantes, dégâts bonus contre bâtiments',
     couleur: '#5a3820'
+  },
+
+  // Menaces sauvages — ne sont produites par aucun bâtiment, seulement
+  // posées sur la carte au démarrage (voir combat.js). Ne recherchent
+  // pas activement à s'entretuer avec la colonie rivale : elles n'en
+  // veulent qu'à vos unités et à votre fourmilière.
+  araignee: {
+    label: 'Araignée',
+    cout: {},
+    tempsProduction: 0,
+    pv: 150,
+    vitesse: 35,
+    degats: 20,
+    portee: 20,
+    cadenceAttaque: 1.3,
+    capaciteTransport: 0,
+    capacite: 'Morsure venimeuse redoutable, attaque quiconque approche',
+    couleur: '#3a1f4a',
+    tailleMultiplicateur: 1.8
+  },
+  scarabee: {
+    label: 'Scarabée',
+    cout: {},
+    tempsProduction: 0,
+    pv: 80,
+    vitesse: 45,
+    degats: 10,
+    portee: 16,
+    cadenceAttaque: 1.0,
+    capaciteTransport: 0,
+    capacite: 'Carapace résistante, fonce droit sur ses cibles',
+    couleur: '#2a3a1a',
+    tailleMultiplicateur: 1.4
   }
 };
 
@@ -174,8 +207,21 @@ function dessinerUnite(ctx, u, temps) {
     ctx.fill();
   }
 
+  // Anneau rouge sur toute unité actuellement désignée comme cible
+  // par un ordre d'attaque d'une unité alliée — rend la "sélection
+  // d'une cible" visible, pas seulement effective en interne.
+  const estCiblee = etat.unites.some((a) => a.faction === 'joueur' && a.ordre === 'attaquer' && a.cibleId === u.id);
+  if (estCiblee) {
+    ctx.strokeStyle = '#e0503c';
+    ctx.lineWidth = 1.5 / etat.camera.zoom;
+    ctx.beginPath();
+    ctx.ellipse(u.x, u.y, 13, 9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   const respiration = Math.sin(temps.total * 2 + u.phaseIdle) * 1.4;
-  const couleurCorps = u.faction === 'ennemi' ? ajusterCouleur('#8a2418', 0) : def.couleur;
+  const couleurCorps = u.faction === 'ennemi' && !def.tailleMultiplicateur ? ajusterCouleur('#8a2418', 0) : def.couleur;
+  const echelle = def.tailleMultiplicateur || 1;
 
   ctx.save();
   ctx.translate(u.x, u.y + respiration);
@@ -183,19 +229,19 @@ function dessinerUnite(ctx, u, temps) {
   // Ombre
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
-  ctx.ellipse(1, 2, 7, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(1, 2, 7 * echelle, 3 * echelle, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Abdomen
   ctx.fillStyle = couleurCorps;
   ctx.beginPath();
-  ctx.ellipse(-2, 0, 6, 4.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(-2, 0, 6 * echelle, 4.5 * echelle, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Tête
   ctx.fillStyle = ajusterCouleur(couleurCorps, -30);
   ctx.beginPath();
-  ctx.ellipse(6, 0, 3.2, 2.8, 0, 0, Math.PI * 2);
+  ctx.ellipse(6 * echelle * 0.85, 0, 3.2 * echelle, 2.8 * echelle, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();

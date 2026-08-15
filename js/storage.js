@@ -76,7 +76,9 @@ function construireInstantane() {
     batiments: etat.batiments,
     unites: etat.unites,
     missionActuelle: etat.missionActuelle,
-    technologies: etat.technologies
+    technologies: etat.technologies,
+    resultatPartie: etat.resultatPartie,
+    fourmilierePv: fourmiliere.pv
   };
 }
 
@@ -98,6 +100,11 @@ function appliquerInstantane(instantane) {
   etat.missionActuelle = instantane.missionActuelle;
   etat.technologies.length = 0;
   etat.technologies.push(...instantane.technologies);
+
+  // Compatibilité avec les sauvegardes d'avant cette vague, qui
+  // n'ont pas ces deux champs.
+  etat.resultatPartie = instantane.resultatPartie !== undefined ? instantane.resultatPartie : null;
+  if (instantane.fourmilierePv !== undefined) fourmiliere.pv = instantane.fourmilierePv;
 }
 
 // ---------------------------------------------------------
@@ -192,6 +199,7 @@ async function demarrerPartie() {
     genererRessources();
     genererBatimentsProduction();
     genererColonieEnnemie();
+    genererMenacesSauvages();
     console.log('Nouvelle partie démarrée (aucune sauvegarde trouvée).');
   }
 }
