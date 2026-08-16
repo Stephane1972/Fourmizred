@@ -71,6 +71,7 @@ let modePlacementDefense = null;
 function activerPlacementDefense(type) {
   modePlacementDefense = modePlacementDefense === type ? null : type;
   if (modePlacementDefense) {
+    modePlacementLaboratoire = null; // les deux modes de placement sont mutuellement exclusifs
     console.log(`Mode placement : ${TYPES_DEFENSE[type].label} — touchez la carte pour la construire.`);
   }
 }

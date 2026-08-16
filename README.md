@@ -491,6 +491,60 @@ productibles pour l'instant (comportement attendu, pas un bug).
 
 ---
 
+## État du projet — VAGUE 11 (recherche) terminée
+
+Cinq bâtiments de recherche et un arbre de dix technologies (deux
+paliers par bâtiment, le second nécessitant le premier).
+
+### Ce qui a été ajouté
+
+- `js/research.js` (nouveau) — Laboratoire biologique, Laboratoire
+  chimique, Centre de génétique, Observatoire, Centre de stratégie ;
+  `mettreEnFileRecherche()` vérifie construction terminée,
+  prérequis, technologie pas déjà acquise, et ressources
+  suffisantes avant de prélever le coût ; les technologies du Centre
+  de stratégie (+5 puis +10 population maximale) sont **réellement
+  appliquées** à l'acquisition, pour prouver que le système
+  fonctionne de bout en bout sans toucher au combat déjà testé des
+  vagues précédentes — les 8 autres décrivent un effet "à venir"
+  (même principe que les capacités d'unités depuis la vague 10)
+- `js/input.js` — touches B/H/G/O/T pour armer le placement d'un
+  laboratoire (provisoire), mutuellement exclusif avec le placement
+  de défenses de la vague 9
+- `js/renderer.js` — rendu des laboratoires, barre de progression de
+  construction puis de recherche en cours
+
+### Bug détecté et corrigé en cours de route
+
+`mettreEnFileRecherche()` ne vérifiait pas si le laboratoire était
+encore en construction — une recherche pouvait être lancée sur un
+bâtiment pas encore terminé. Corrigé par un test qui a immédiatement
+révélé le problème.
+
+### Sauvegarde des technologies
+
+`etat.technologies` existe depuis la toute première vague, prévu
+justement pour cet usage, et les laboratoires vivent dans
+`etat.batiments` comme les défenses de la vague 9 : **aucune
+modification de `storage.js`** n'a donc été nécessaire. Vérifié
+explicitement par un test dédié plutôt que supposé.
+
+### Vérifications effectuées
+
+Testé de bout en bout : existence des 5 laboratoires et 10
+technologies avec coût et temps de recherche, coût prélevé au
+placement, recherche refusée pendant la construction, acceptée une
+fois terminée, palier II refusé sans le palier I puis accepté une
+fois celui-ci acquis, refus d'une recherche en double, effet
+réellement appliqué (+5 population maximale), et conservation
+fidèle des technologies et des laboratoires à travers une
+sauvegarde/rechargement complet.
+
+Toutes les données restent conservées hors ligne, comme le reste du
+projet depuis la vague 1.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

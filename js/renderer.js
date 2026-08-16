@@ -224,6 +224,7 @@ function rendreScene(temps) {
 
   dessinerBatimentsProduction(ctx);
   dessinerDefenses(ctx);
+  dessinerLaboratoires(ctx);
   dessinerNidEnnemi(ctx);
   dessinerFourmiliere(ctx, temps);
   dessinerUnites(ctx, temps);

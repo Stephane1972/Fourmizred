@@ -134,6 +134,7 @@ function boucle(horodatageActuel) {
     mettreAJourRecolte(temps.delta);
     mettreAJourCombat(temps.delta);
     mettreAJourDefenses(temps.delta);
+    mettreAJourLaboratoires(temps.delta);
   }
 
   rendreScene(temps);
@@ -187,8 +188,23 @@ window.addEventListener('keydown', (e) => {
     console.log(`Ordres annulés pour ${selectionnees.length} unité(s).`);
   } else if (RACCOURCIS_DEFENSE[touche]) {
     activerPlacementDefense(RACCOURCIS_DEFENSE[touche]);
+  } else if (RACCOURCIS_LABORATOIRE[touche]) {
+    activerPlacementLaboratoire(RACCOURCIS_LABORATOIRE[touche]);
   }
 });
+
+// Raccourcis de test pour armer le mode de placement d'un
+// laboratoire — provisoire, sera un menu de construction dans ui.js.
+//   B = Laboratoire biologique     O = Observatoire
+//   H = Laboratoire chimique       T = Centre de stratégie
+//   G = Centre de génétique
+const RACCOURCIS_LABORATOIRE = {
+  'b': 'laboratoireBiologique',
+  'h': 'laboratoireChimique',
+  'g': 'centreGenetique',
+  'o': 'observatoire',
+  't': 'centreStrategie'
+};
 
 // Raccourcis de test pour armer le mode de placement d'une défense —
 // provisoire, sera un menu de construction dans ui.js.

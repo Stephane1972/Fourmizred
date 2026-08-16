@@ -56,11 +56,15 @@ function initialiserInput() {
     if (pointeursActifs.size === 1 && distanceTotaleGlissee < SEUIL_TAP) {
       const point = ecranVersMonde(e.clientX, e.clientY);
 
-      // Priorité absolue : un mode de placement de défense est actif,
-      // ce tap la construit et rien d'autre ne se passe ce coup-ci.
+      // Priorité absolue : un mode de placement (défense OU
+      // laboratoire) est actif, ce tap le construit et rien d'autre
+      // ne se passe ce coup-ci.
       if (modePlacementDefense) {
         placerDefense(modePlacementDefense, point.x, point.y);
         modePlacementDefense = null;
+      } else if (modePlacementLaboratoire) {
+        placerLaboratoire(modePlacementLaboratoire, point.x, point.y);
+        modePlacementLaboratoire = null;
       } else {
         const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
         const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
