@@ -135,6 +135,7 @@ function boucle(horodatageActuel) {
     mettreAJourCombat(temps.delta);
     mettreAJourDefenses(temps.delta);
     mettreAJourLaboratoires(temps.delta);
+    mettreAJourMission(temps.delta);
   }
 
   rendreScene(temps);

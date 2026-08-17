@@ -240,6 +240,7 @@ function resoudreAttaquesFourmiliere() {
 // ---------------------------------------------------------
 function verifierFinDePartie() {
   if (etat.resultatPartie) return;
+  if (etat.missionActuelle) return; // une mission gère ses propres conditions (missions.js)
 
   if (fourmiliere.pv <= 0) {
     etat.resultatPartie = 'defaite';

@@ -78,6 +78,8 @@ function construireInstantane() {
     missionActuelle: etat.missionActuelle,
     technologies: etat.technologies,
     resultatPartie: etat.resultatPartie,
+    missionsCompletees: [...etat.missionsCompletees],
+    progressionMission: etat.progressionMission ? { ...etat.progressionMission, baselineRessources: { ...etat.progressionMission.baselineRessources } } : null,
     fourmilierePv: fourmiliere.pv
   };
 }
@@ -104,6 +106,9 @@ function appliquerInstantane(instantane) {
   // Compatibilité avec les sauvegardes d'avant cette vague, qui
   // n'ont pas ces deux champs.
   etat.resultatPartie = instantane.resultatPartie !== undefined ? instantane.resultatPartie : null;
+  etat.missionsCompletees.length = 0;
+  if (instantane.missionsCompletees) etat.missionsCompletees.push(...instantane.missionsCompletees);
+  etat.progressionMission = instantane.progressionMission !== undefined ? instantane.progressionMission : null;
   if (instantane.fourmilierePv !== undefined) fourmiliere.pv = instantane.fourmilierePv;
 }
 

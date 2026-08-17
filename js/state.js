@@ -42,6 +42,8 @@ const etat = {
   batiments: [],
   unites: [],
   missionActuelle: null,
+  progressionMission: null, // { tempsEcoule, unitesProduites, baselineRessources }
+  missionsCompletees: [],   // identifiants des missions terminées — persiste entre les sessions
   technologies: [],
   resultatPartie: null // null | 'victoire' | 'defaite'
 };
@@ -61,6 +63,10 @@ function nouvellePartie() {
   etat.batiments.length = 0;
   etat.unites.length = 0;
   etat.missionActuelle = null;
+  etat.progressionMission = null;
+  // etat.missionsCompletees n'est volontairement PAS réinitialisé ici :
+  // c'est une progression de campagne qui doit survivre à une nouvelle
+  // partie standard, seule demarrerMission() (missions.js) y touche.
   etat.technologies.length = 0;
   etat.resultatPartie = null;
   // fourmiliere est défini dans renderer.js, chargé avant que cette

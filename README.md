@@ -545,6 +545,61 @@ projet depuis la vague 1.
 
 ---
 
+## État du projet — VAGUE 12 (missions) terminée
+
+Dix missions jouables avec un moteur d'objectifs générique
+supportant 7 types différents (récolter, éliminer, produire,
+survivre, rechercher une technologie, atteindre une population,
+construire un bâtiment).
+
+### Les dix missions
+1. Première galerie · 2. Récolte urgente · 3. La colonie rivale ·
+4. Le territoire rouge · 5. L'invasion des araignées · 6. Le pont
+de feuilles · 7. La guerre des pucerons · 8. Le laboratoire secret ·
+9. La grande migration · 10. La guerre des reines
+
+### Ce qui a été ajouté
+
+- `js/missions.js` (nouveau) — les 10 définitions complètes
+  (objectifs, ennemis, ressources de départ, récompense) ; moteur
+  `evaluerObjectif()` générique ; `demarrerMission()` réinitialise
+  la partie avec les paramètres propres à la mission ; défaite
+  toujours possible par destruction de la fourmilière, et en plus
+  par dépassement du temps imparti si la mission en a un ;
+  déblocage séquentiel (`missionDebloquee()`) — la mission N+1
+  n'est accessible qu'une fois la N terminée
+- `js/state.js` — `missionsCompletees` (persiste entre les
+  sessions, jamais réinitialisé par une simple nouvelle partie) et
+  `progressionMission` (suivi de la progression en cours)
+- `js/units.js` — compteur d'unités produites, nécessaire à
+  l'objectif "produire des unités" de la mission 6
+- `js/combat.js` — la fin de partie générique (mode escarmouche
+  libre) cède la main à `missions.js` dès qu'une mission est active,
+  pour ne pas déclencher une victoire automatique sur des missions
+  sans ennemis
+- `js/renderer.js` — panneau d'objectifs affiché en haut à gauche
+  pendant une mission, avec coche dès qu'un objectif est rempli
+
+### Interface provisoire
+
+Il n'y a pas encore de menu de sélection de mission tactile —
+`demarrerMission(1)` à `demarrerMission(10)` se déclenchent pour
+l'instant depuis la console développeur, en attendant `ui.js`.
+
+### Vérifications effectuées
+
+Testé de bout en bout : les 10 missions ont bien tous les champs
+requis, déblocage séquentiel respecté, ressources de départ
+appliquées, objectif de récolte qui progresse et déclenche
+victoire + récompense appliquée + mission ajoutée à
+`missionsCompletees`, défaite par dépassement du temps imparti,
+défaite par destruction de la fourmilière, objectif d'élimination
+qui fonctionne avec les araignées de la mission 5, et conservation
+fidèle de toute la progression de campagne (missions terminées et
+mission en cours) à travers une sauvegarde/rechargement complet.
+
+---
+
 ## Prochaine étape
 
 En attente de validation avant de démarrer la **VAGUE 3** (prévue :

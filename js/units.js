@@ -294,6 +294,8 @@ function creerUnite(typeUnite, batiment) {
     batiment.y + Math.sin(angle) * rayonSortie,
     'joueur'
   ));
+
+  if (etat.progressionMission) etat.progressionMission.unitesProduites++;
 }
 
 // Fabrique brute d'une instance d'unité — utilisée à la fois par la

@@ -234,6 +234,7 @@ function rendreScene(temps) {
   ctx.restore();
 
   dessinerSurcoucheDebug(temps);
+  dessinerPanneauMission();
   dessinerEcranFinDePartie();
 }
 
