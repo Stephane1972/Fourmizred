@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Verrou "hors ligne" au niveau système, en complément de l'absence de
+  toute permission INTERNET dans AndroidManifest.xml (voir ce fichier) :
+  cleartextTrafficPermitted="false" interdit tout trafic HTTP non chiffré,
+  quelle qu'en soit la source.
+
+  Le domaine local "appassets.androidplatform.net" utilisé par
+  WebViewAssetLoader (voir MainActivity.java) n'a JAMAIS besoin d'être
+  déclaré ici : il n'est jamais résolu par une vraie requête réseau,
+  WebViewAssetLoader l'intercepte avant qu'il ne quitte l'application
+  et répond directement avec les fichiers d'assets/www/. Cette
+  configuration ne fait donc que fermer la porte à toute tentative de
+  sortie vers le vrai réseau, accidentelle ou non.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

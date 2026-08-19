@@ -25,6 +25,18 @@ function enregistrerServiceWorker() {
     console.warn('Service Worker désactivé : la page est ouverte en file://. Utilisez un serveur local pour tester le mode hors ligne.');
     return;
   }
+  // APK Android (vague 14) : la WebView sert le jeu depuis un domaine
+  // virtuel local (WebViewAssetLoader, voir android/README-APK.md) sous
+  // /assets/www/, jamais sous BASE_PATH ("/Fourmizred/") — un enregistrement
+  // échouerait donc systématiquement (chemin introuvable) sans rien
+  // apporter : l'APK embarque déjà tous les fichiers, il n'a besoin
+  // d'aucun cache réseau. Le Service Worker reste utile et actif pour le
+  // déploiement navigateur (GitHub Pages), seul cas où ce chemin n'est
+  // pas emprunté.
+  if (location.hostname === 'appassets.androidplatform.net') {
+    console.log('Service Worker désactivé : contenu déjà embarqué dans l\'APK (WebViewAssetLoader).');
+    return;
+  }
 
   navigator.serviceWorker.register(BASE_PATH + 'sw.js', { scope: BASE_PATH })
     .then((enregistrement) => {

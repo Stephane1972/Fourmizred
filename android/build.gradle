@@ -1,0 +1,5 @@
+// Fichier Gradle racine — ne fait que déclarer le plugin Android,
+// la configuration réelle est dans app/build.gradle.
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}

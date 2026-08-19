@@ -718,6 +718,72 @@ la ligne d'affichage de la surcouche de debug a changé dans
 
 ---
 
+## État du projet — VAGUE 14 (préparation d'un APK Android hors ligne) terminée
+
+Le jeu était déjà jouable au tactile (vague 13) et fonctionnel hors
+ligne dans un navigateur (vague 1, Service Worker + IndexedDB). Cette
+vague ajoute une coquille native minimale (`android/`) qui embarque ce
+même jeu — sans aucune modification de ses règles — dans une
+application Android installable (`.apk`) qui ne dépend d'aucune
+connexion Internet.
+
+### Ce qui a été ajouté
+
+- **`android/`** (nouveau dossier) — projet Android Studio complet :
+  Gradle (`build.gradle`, `settings.gradle`, `gradle.properties`),
+  manifeste, une seule classe native (`MainActivity.java`, ~150
+  lignes), thèmes/écran de lancement, icônes générées depuis
+  `assets/icons/icon-512.png`, configuration réseau. Voir
+  **`android/README-APK.md`** pour le détail complet de chaque choix
+  (intégration WebView, fichiers copiés, plein écran, bouton retour,
+  icônes...) — ce fichier répond point par point au cahier des charges
+  de cette vague.
+- **`scripts/copier-assets-android.sh`** (nouveau) — copie
+  `index.html`, `css/`, `js/`, `manifest.webmanifest` et
+  `assets/icons/` dans `android/app/src/main/assets/www/` ; s'exécute
+  aussi automatiquement à chaque build Gradle (tâche
+  `copierAssetsWeb`). `sw.js` et `offline.html` ne sont volontairement
+  pas copiés (inutiles : l'APK embarque déjà tout, voir
+  `android/README-APK.md` §2).
+- **`js/main.js`** — `enregistrerServiceWorker()` détecte désormais le
+  contexte APK (`appassets.androidplatform.net`, le domaine local
+  utilisé par `WebViewAssetLoader`) et n'essaie plus de s'y enregistrer
+  (un enregistrement aurait échoué de toute façon, sans rien apporter).
+  Reste actif et inchangé pour le déploiement navigateur.
+- **`js/ui.js`** — la fonction appelée en confirmant "Quitter"
+  (bouton retour, vague 13) utilise désormais
+  `window.AndroidNatif.quitterApplication()` quand ce pont natif
+  existe (fourni par `MainActivity.java` dans l'APK), pour une
+  fermeture immédiate et fiable ; conserve intégralement l'ancien
+  mécanisme (`history.go()`) comme repli dans le navigateur/PWA, où ce
+  pont n'existe pas. Aucune autre ligne de `ui.js` n'a changé.
+
+### Vérifications effectuées
+
+Les 6 fichiers XML du projet Android (manifeste, thèmes, écran de
+lancement, config réseau, couleurs, chaînes) validés comme XML
+bien formé. Les 5 densités d'icônes de lancement (48/72/96/144/192 px)
+générées et vérifiées présentes sur disque. `js/main.js` et `js/ui.js`
+revérifiés syntaxiquement valides après modification
+(`node --check`). Script `scripts/copier-assets-android.sh` exécuté :
+copie bien exactement `index.html` + `css/` + `js/` +
+`manifest.webmanifest` + `assets/icons/`, sans `sw.js` ni
+`offline.html`. Absence de toute permission Internet dans le
+manifeste confirmée par relecture. Aucun fichier de logique de jeu
+(`buildings.js`, `units.js`, `defenses.js`, `research.js`,
+`missions.js`, `combat.js`, `resources.js`, `storage.js`) n'a été
+modifié — seuls `main.js` et `ui.js` ont reçu chacun un ajout ciblé et
+rétrocompatible, documentés ci-dessus.
+
+### Ce qui reste ouvert
+
+Voir la section dédiée dans `android/README-APK.md` (build release
+signé, icônes adaptatives, wrapper Gradle à générer à la première
+ouverture du projet, pont retour arrière à confirmer sur un appareil
+réel).
+
+---
+
 ## Prochaine étape
 
-En attente de validation avant de démarrer la **VAGUE 14**.
+En attente de validation avant de démarrer la **VAGUE 15**.

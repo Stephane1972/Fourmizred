@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Écran de lancement natif Android : fond uni + icône centrée. Affiché
+  par la fenêtre elle-même (LaunchTheme, voir themes.xml) pendant le
+  bref instant entre le démarrage de l'Activity et l'affichage de la
+  WebView — avant même que le HTML n'existe à l'écran. Reprend
+  volontairement la même palette que #ecran-chargement (css/style.css)
+  pour une transition sans à-coup visuel vers l'écran de chargement HTML,
+  qui prend ensuite le relais (barre de progression, etc.).
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/fond_lancement" />
+    <item android:gravity="center" android:width="120dp" android:height="120dp">
+        <bitmap android:src="@mipmap/ic_launcher" android:gravity="center" />
+    </item>
+</layer-list>

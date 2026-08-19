@@ -1,0 +1,7 @@
+<resources>
+    <!-- Identique à la couleur de fond du jeu (css/style.css) et à
+         background_color (manifest.webmanifest), pour qu'aucune
+         couleur ne "flashe" entre l'écran de lancement natif Android
+         et l'écran de chargement HTML de main.js. -->
+    <color name="fond_lancement">#16110A</color>
+</resources>

@@ -421,6 +421,15 @@ canvas.addEventListener('pointerdown', () => {
 // empile un état d'historique factice à chaque étape ; un retour
 // ferme d'abord la boîte de dialogue ou le panneau ouvert, et ne
 // propose de quitter qu'une fois l'écran de jeu "nu".
+//
+// Dans le navigateur/PWA (aucun wrapper natif), la confirmation
+// utilise history.go() pour reculer au-delà de tous les états empilés
+// — cela fonctionne mais dépend un peu du navigateur (voir le README
+// de la vague 13). Dans l'APK Android (vague 14, voir
+// android/MainActivity.java), window.AndroidNatif est fourni par la
+// WebView : on l'utilise alors pour fermer l'application directement
+// et instantanément, sans dépendre de l'historique. Les deux chemins
+// cohabitent sans rien changer d'autre au mécanisme.
 // -----------------------------------------------------------
 let profondeurHistorique = 0;
 let sortieAutorisee = false;
@@ -430,6 +439,17 @@ function empilerEtatRetour() {
   history.pushState({ antCommander: true }, '');
 }
 empilerEtatRetour();
+
+function quitterApplication() {
+  sortieAutorisee = true;
+  if (window.AndroidNatif && window.AndroidNatif.quitterApplication) {
+    // APK Android (vague 14) : fermeture native immédiate et fiable.
+    window.AndroidNatif.quitterApplication();
+  } else {
+    // Navigateur / PWA (vague 13) : seul mécanisme disponible.
+    history.go(-Math.max(profondeurHistorique, 1));
+  }
+}
 
 window.addEventListener('popstate', () => {
   if (sortieAutorisee) return; // sortie confirmée : on laisse le navigateur/WebView faire son travail
@@ -445,12 +465,10 @@ window.addEventListener('popstate', () => {
     empilerEtatRetour();
     return;
   }
-  demanderConfirmation('Quitter Ant Commander ?', () => {
-    sortieAutorisee = true;
-    history.go(-Math.max(profondeurHistorique, 1));
-  });
+  demanderConfirmation('Quitter Ant Commander ?', quitterApplication);
   empilerEtatRetour();
 });
+
 
 // -----------------------------------------------------------
 // RACCOURCI CLAVIER (desktop uniquement) — bascule la surcouche de

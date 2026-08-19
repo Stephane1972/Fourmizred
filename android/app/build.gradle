@@ -1,0 +1,66 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.stephane1972.antcommander'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.stephane1972.antcommander"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        // Tenu synchronisé "à la main" avec VERSION_JEU dans js/config.js —
+        // pensez à mettre à jour les deux ensemble.
+        versionName "0.2.0"
+    }
+
+    buildTypes {
+        release {
+            // Pas de minification/ProGuard : ce projet est presque
+            // entièrement du HTML/CSS/JS embarqué dans assets/www, sur
+            // lequel R8 n'a de toute façon aucune prise. MainActivity.java
+            // est le seul code natif, volontairement minimal.
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    // WebViewAssetLoader : sert index.html et tous ses fichiers depuis
+    // assets/www/ via un domaine LOCAL virtuel, jamais résolu sur le
+    // vrai réseau (voir MainActivity.java et README-APK.md). C'est ce
+    // qui permet un stockage local (IndexedDB/localStorage) fiable —
+    // contrairement à un chargement direct en file:///, peu fiable
+    // pour ce type de stockage sur certaines versions d'Android.
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
+
+// -----------------------------------------------------------
+// Copie automatique du jeu web (index.html, css/, js/, manifest,
+// icônes) dans assets/www/ avant chaque build, pour que l'APK
+// embarque toujours la version la plus récente du jeu sans étape
+// manuelle oubliée. Liste exacte des fichiers copiés : voir
+// README-APK.md, section "Fichiers à copier dans les ressources
+// Android". Le même travail peut aussi être fait à la main avec
+// scripts/copier-assets-android.sh (utile hors Android Studio).
+// -----------------------------------------------------------
+tasks.register('copierAssetsWeb', Copy) {
+    def racineProjet = "$projectDir/../.."
+    from(racineProjet) {
+        include 'index.html'
+        include 'css/**'
+        include 'js/**'
+        include 'manifest.webmanifest'
+        include 'assets/icons/**'
+    }
+    into "$projectDir/src/main/assets/www"
+}
+tasks.named('preBuild').configure { dependsOn 'copierAssetsWeb' }

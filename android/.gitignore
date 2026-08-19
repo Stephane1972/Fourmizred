@@ -1,0 +1,30 @@
+# Fichiers générés par Android Studio / Gradle — jamais à versionner
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+build/
+/captures
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Wrapper Gradle : le .jar binaire n'est volontairement pas fourni
+# (voir README-APK.md, section "Préparer Gradle") — seul
+# gradle-wrapper.properties est versionné.
+gradle/wrapper/gradle-wrapper.jar
+gradlew
+gradlew.bat
+
+# Copie du jeu web régénérée à chaque build (voir build.gradle,
+# tâche copierAssetsWeb, et scripts/copier-assets-android.sh) — la
+# source de vérité reste les fichiers à la racine du dépôt.
+app/src/main/assets/www/*
+!app/src/main/assets/www/.gitkeep
+
+# Clé de signature release — ne JAMAIS committer un keystore réel
+*.jks
+*.keystore
+key.properties

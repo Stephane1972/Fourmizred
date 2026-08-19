@@ -1,0 +1,23 @@
+<resources>
+
+    <!-- Thème appliqué le temps que la WebView charge et affiche
+         index.html : fond uni + icône centrée (drawable/ecran_lancement),
+         sans barre de titre ni d'actions, en plein écran. Voir
+         MainActivity.onCreate() (qui l'applique avant super.onCreate())
+         et onPageFinished() (qui bascule vers AppTheme juste après). -->
+    <style name="LaunchTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@drawable/ecran_lancement</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
+    <!-- Thème normal du jeu, une fois la page chargée. -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/fond_lancement</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
+</resources>

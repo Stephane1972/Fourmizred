@@ -1,0 +1,6 @@
+Ce dossier est rempli automatiquement (fichiers du jeu web copiés
+depuis la racine du dépôt) par la tâche Gradle "copierAssetsWeb"
+(voir android/app/build.gradle) à chaque build, ou manuellement via
+scripts/copier-assets-android.sh. Son contenu n'est PAS versionné
+(voir android/.gitignore) pour éviter toute divergence avec les
+fichiers sources — voir android/README-APK.md.
