@@ -1,9 +1,8 @@
 /* ===========================================================
-   MOBILE — ajustements tactiles et responsive.
-   Volontairement léger à ce stade (vague 1 = pas encore d'UI de jeu
-   à adapter). Sera enrichi aux prochaines vagues avec les menus de
-   construction/production/recherche, la mini-carte, le panneau
-   d'unité, etc.
+   MOBILE — ajustements tactiles et responsive de base (canevas de
+   jeu, écran de chargement, zones sûres). Le menu tactile complet
+   (production/construction/recherche/missions/partie) est dans
+   css/menu.css, ajouté à la vague 13.
    =========================================================== */
 
 /* Empêche le "tiré-vers-le-bas" (pull-to-refresh) et l'effet de

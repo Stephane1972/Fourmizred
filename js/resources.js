@@ -2,12 +2,12 @@
 // RESOURCES — nœuds de ressources récoltables posés sur la carte
 // (nourriture, eau, matériaux). Les phéromones et la population ne
 // sont pas des nœuds sur la carte : elles vivent uniquement dans
-// `etat.ressources` (voir state.js) et seront gérées par
-// buildings.js / units.js aux prochaines vagues.
-//
-// À cette vague, les nœuds sont uniquement posés et affichés — la
-// récolte réelle (une unité qui vient prélever dedans) arrivera avec
+// `etat.ressources` (voir state.js), gérées par buildings.js /
 // units.js.
+//
+// La récolte réelle (une unité qui vient prélever dans un nœud) est
+// gérée par mettreAJourRecolte() dans ce fichier, appelée par la
+// boucle de jeu (main.js).
 // ===========================================================
 
 const TYPES_RESSOURCE = {

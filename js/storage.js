@@ -4,15 +4,15 @@
 // - IndexedDB : toutes les données de partie (ressources, nœuds de
 //   ressources, bâtiments, unités, mission, technologies)
 // - LocalStorage : réservé aux petites préférences simples (aucune
-//   n'existe encore à cette vague, mais la convention est posée pour
-//   quand ui.js aura besoin d'enregistrer par ex. le volume sonore)
+//   n'est utilisée à ce jour ; la convention reste disponible pour
+//   un futur réglage comme le volume sonore)
 //
 // Plusieurs emplacements de sauvegarde sont supportés nativement
 // (n'importe quelle chaîne comme nom d'emplacement). L'emplacement
 // "auto" est utilisé par la sauvegarde automatique et le chargement
-// au démarrage ; les autres seront exposés à l'utilisateur par
-// ui.js à une prochaine vague (bouton "Sauvegarder", liste des
-// emplacements...).
+// au démarrage ; les autres sont exposés à l'utilisateur par le
+// panneau "Partie" de js/ui.js (Sauvegarder/Charger, emplacement
+// "manuel") depuis la vague 13.
 // ===========================================================
 
 const NOM_BASE = 'ant-commander-db';

@@ -156,10 +156,11 @@ function boucle(horodatageActuel) {
 }
 
 // ---------------------------------------------------------
-// RACCOURCIS DE TEST — sauvegarde/chargement/suppression manuels.
-// Provisoire : sera remplacé par de vrais boutons dans ui.js. Permet
-// de tester dès maintenant toute l'API de storage.js sans attendre
-// l'interface.
+// RACCOURCIS CLAVIER — sauvegarde/chargement/suppression manuels.
+// Coexistent avec les boutons tactiles équivalents du panneau
+// "Partie" ajoutés par js/ui.js (vague 13) : les deux appellent
+// exactement les mêmes fonctions de storage.js, sans différence de
+// comportement. Conservés pour un usage clavier/desktop rapide.
 //   S = sauvegarder sur l'emplacement "manuel"
 //   L = charger l'emplacement "manuel"
 //   Suppr = supprimer l'emplacement "manuel"
@@ -232,8 +233,9 @@ const RACCOURCIS_DEFENSE = {
   '0': 'tourelleAcide'
 };
 
-// Raccourcis de test pour la production — provisoire, sera remplacé
-// par le vrai menu de production de ui.js.
+// Raccourcis clavier pour la production — coexistent avec le vrai
+// menu de production tactile de ui.js (vague 13), mêmes fonctions
+// appelées des deux côtés.
 //   1 = Ouvrière (Nurserie)      4 = Fourmi rouge (Caserne)
 //   2 = Nourrice (Nurserie)      5 = Fourmi charpentière (Caserne)
 //   3 = Éclaireuse (École des éclaireuses)

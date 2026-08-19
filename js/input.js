@@ -1,8 +1,9 @@
 // ===========================================================
-// INPUT — entrées souris/tactile/clavier. À cette vague : pilotage
-// de la caméra (glisser pour déplacer, molette/pincement pour
-// zoomer) et retour visuel tactile. La sélection d'unités et les
-// ordres arriveront avec units.js à une prochaine vague.
+// INPUT — entrées souris/tactile/clavier : pilotage de la caméra
+// (glisser pour déplacer, molette/pincement pour zoomer), sélection
+// d'unités, ordres (récolte, attaque, réparation) et placement de
+// défenses/laboratoires au tap. Les raccourcis clavier de production
+// et le menu tactile équivalent sont dans main.js et js/ui.js.
 // ===========================================================
 
 const pointeursActifs = new Map();

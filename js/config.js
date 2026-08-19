@@ -8,9 +8,9 @@
 // - Si le jeu est publié à la racine d'un domaine ou d'un compte
 //   GitHub (ex: https://votre-compte.github.io/), laissez "/".
 // - Si le jeu est publié comme "project site" (ex:
-//   https://votre-compte.github.io/), la valeur doit
-//   être "/" (le nom EXACT du dépôt, avec un / au
-//   début ET à la fin).
+//   https://votre-compte.github.io/nom-du-depot/), la valeur doit
+//   être "/nom-du-depot/" — le nom EXACT du dépôt, avec un / au
+//   début ET à la fin.
 //
 // Cette constante est utilisée par sw.js (enregistrement et chemins
 // du cache) et par main.js (enregistrement du service worker) — il
@@ -28,9 +28,11 @@ const VERSION_JEU = "0.2.0";
 const NOM_JEU = "Ant Commander";
 const SOUS_TITRE_JEU = "La Guerre des Colonies";
 
-// Palette de couleurs partagée par les modules de rendu (renderer.js,
-// ui.js...) dans les prochaines vagues. Centralisée ici pour éviter
-// les couleurs codées en dur dispersées dans le code.
+// Palette de couleurs partagée par les modules de rendu canevas
+// (renderer.js). L'interface HTML (js/ui.js) utilise ses propres
+// variables CSS (voir :root dans css/style.css) plutôt que cet objet.
+// Centralisée ici pour éviter les couleurs codées en dur dispersées
+// dans le code JS.
 const PALETTE = {
   fond: '#16110a',
   sol: '#d9c199',

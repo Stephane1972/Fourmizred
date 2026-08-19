@@ -1,8 +1,10 @@
 // ===========================================================
 // RENDERER — génère et dessine la scène : terrain, fourmilière,
-// retours tactiles. Piloté par la caméra (camera.js) et le temps
-// (main.js). Les bâtiments/unités/effets de combat viendront aux
-// prochaines vagues (buildings.js, units.js, combat.js).
+// bâtiments, unités, effets de combat, retours tactiles, panneaux de
+// mission et de fin de partie. Piloté par la caméra (camera.js) et
+// le temps (main.js). La surcouche de diagnostic (dessinerSurcoucheDebug,
+// plus bas) est masquée par défaut depuis la vague 13 — la vraie
+// barre de ressources visible par le joueur est dans js/ui.js.
 // ===========================================================
 
 // ---------------------------------------------------------
@@ -283,8 +285,9 @@ function dessinerSurcoucheDebug(temps) {
     `cam x:${Math.round(etat.camera.x)} y:${Math.round(etat.camera.y)} zoom:${etat.camera.zoom.toFixed(2)} · t:${temps.total.toFixed(1)}s`,
     16, canvas.height - 44
   );
-  // Stock de ressources — provisoire, remplacé par une vraie barre
-  // d'interface (ui.js) à une prochaine vague.
+  // Stock de ressources — uniquement dans la surcouche de diagnostic
+  // (masquée par défaut, touche D). La vraie barre visible par le
+  // joueur est construite par js/ui.js (vague 13).
   const r = etat.ressources;
   ctx.fillText(
     `🌾${formaterNombre(r.nourriture)}  💧${formaterNombre(r.eau)}  🪵${formaterNombre(r.materiaux)}  👥${r.population}/${r.populationMax}  🐜${etat.unites.length}`,

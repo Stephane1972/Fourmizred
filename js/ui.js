@@ -312,13 +312,21 @@ function construirePanneauPartie() {
     for (const u of selectionnees) annulerOrdres(u);
   });
   document.getElementById('action-sauvegarder').addEventListener('click', () => {
-    sauvegarderPartie('manuel');
+    sauvegarderPartie('manuel')
+      .then(() => console.log('Sauvegarde manuelle effectuée (emplacement "manuel").'))
+      .catch((erreur) => console.error('Échec de la sauvegarde manuelle :', erreur));
   });
   document.getElementById('action-charger').addEventListener('click', () => {
     demanderConfirmation('Charger la dernière sauvegarde manuelle ? La partie en cours sera remplacée.', () => {
-      chargerPartie('manuel').then((sauvegarde) => {
-        if (sauvegarde) appliquerInstantane(sauvegarde);
-      });
+      chargerPartie('manuel')
+        .then((sauvegarde) => {
+          if (sauvegarde) {
+            appliquerInstantane(sauvegarde);
+          } else {
+            console.warn('Aucune sauvegarde manuelle trouvée (emplacement "manuel").');
+          }
+        })
+        .catch((erreur) => console.error('Échec du chargement de la sauvegarde manuelle :', erreur));
       fermerPanneau();
     });
   });

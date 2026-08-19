@@ -4,9 +4,9 @@
 // dans un seul objet global `etat`. Les autres modules le lisent et
 // le modifient directement — pas de copie locale qui se désynchronise.
 //
-// La persistance (sauvegarde/chargement) sera ajoutée dans
-// storage.js à la vague 3, une fois qu'il y aura des données de
-// colonie réelles à sauvegarder (bâtiments, unités, technologies).
+// La persistance (sauvegarde/chargement) est gérée par storage.js,
+// qui sérialise directement les champs de cet objet (voir
+// construireInstantane()/appliquerInstantane() dans ce fichier).
 // ===========================================================
 
 const CARTE_LARGEUR = 4000;
@@ -28,9 +28,9 @@ const etat = {
     zoomMax: 2.5
   },
 
-  // Placeholders pour les prochaines vagues — présents dès maintenant
-  // pour que la forme de l'état soit stable et que storage.js (vague 3)
-  // n'ait pas à réécrire cette structure.
+  // Ressources de départ — modifiées en jeu par la récolte
+  // (resources.js), la production (buildings.js) et les coûts de
+  // construction/recherche (defenses.js, research.js).
   ressources: {
     nourriture: 200,
     eau: 200,

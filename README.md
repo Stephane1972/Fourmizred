@@ -784,6 +784,138 @@ réel).
 
 ---
 
+## État du projet — VAGUE 15 (audit final) terminée
+
+Relecture complète des 15 vagues précédentes, sans ajout de
+fonctionnalité : uniquement des corrections de bugs et de
+documentation obsolète, plus une liste de tests manuels à effectuer
+sur de vrais appareils (ce qu'aucun audit de code ne peut remplacer).
+
+### Bugs corrigés
+
+- **`js/ui.js`** — les boutons « Sauvegarder » et « Charger » du
+  panneau Partie appelaient `sauvegarderPartie()` / `chargerPartie()`
+  sans `.catch()`. En cas d'échec IndexedDB (navigation privée, quota
+  dépassé, stockage bloqué...), c'était un **rejet de promesse non
+  géré**, sans aucun retour à l'utilisateur ni dans la console. Corrigé
+  avec les mêmes conventions `.then()/.catch()` déjà utilisées ailleurs
+  dans le projet (`mettreAJourAutoSave`, `demarrerPartie`) ; le
+  chargement avertit aussi désormais explicitement (`console.warn`)
+  quand aucune sauvegarde manuelle n'existe, au lieu d'échouer en
+  silence.
+- **`.nojekyll`** ajouté à la racine — absent jusqu'ici, ce qui
+  laissait GitHub Pages traiter le site avec Jekyll par défaut.
+  Sans effet visible aujourd'hui (aucun fichier ne commence par `_`),
+  mais c'est la pratique standard pour un site 100 % statique, et
+  cela évite une surprise silencieuse si un tel dossier apparaît un
+  jour.
+
+### Documentation corrigée (aucun changement de comportement)
+
+Une dizaine de commentaires devenus obsolètes au fil des vagues ont
+été mis à jour pour refléter l'état réel du code (`js/config.js`,
+`js/main.js`, `js/input.js`, `js/renderer.js`, `js/resources.js`,
+`js/state.js`, `js/storage.js`, `css/mobile.css`, `css/style.css`) —
+pour l'essentiel des mentions « sera ajouté/remplacé à une prochaine
+vague » pour des fonctionnalités en réalité déjà livrées depuis
+plusieurs vagues (menu tactile, sauvegarde manuelle, récolte,
+persistance...). Les mentions encore exactes aujourd'hui
+(`buildings.js` sur le placement manuel de bâtiments de production,
+`units.js`/`defenses.js` sur l'auto-destruction et les structures non
+endommageables) ont été laissées telles quelles.
+
+### Vérifié sans problème trouvé
+
+Chemins de fichiers (`index.html`, `sw.js`, casse exacte comprise,
+vérifiée programmatiquement) ; liste de précache du Service Worker
+(exacte dans les deux sens : rien de manquant, rien d'oublié) ;
+logique `install`/`activate`/`fetch` du Service Worker ;
+`manifest.webmanifest` (icônes aux bonnes tailles réelles, chemins
+relatifs robustes au sous-dossier GitHub Pages) ; IndexedDB
+(`storage.js`) ; absence totale de `localStorage`, de ressources
+externes (police, CDN...) et d'appels réseau applicatifs (`fetch`,
+`XMLHttpRequest`) en dehors du Service Worker lui-même ; cohérence de
+`BASE_PATH` entre `config.js` et `sw.js` ; orientation (aucun
+verrouillage, media queries portrait/paysage cohérentes) ; gestion du
+delta-temps (déjà bornée contre un saut après mise en arrière-plan) ;
+z-index de l'écran de chargement et des panneaux tactiles (pas de
+recouvrement) ; toutes les références de ressources Android
+(`@style`, `@mipmap`, `@xml`, `@color`, `R.style.*`) pointent vers des
+fichiers réellement présents ; calcul du chemin Gradle
+(`copierAssetsWeb`) vérifié pointer exactement vers la racine du
+dépôt ; script `copier-assets-android.sh` réexécuté avec succès.
+
+Un scénario de test de bout en bout (production, construction,
+recherche, mission avec confirmation, sauvegarde/chargement, retour
+arrière x2, plein écran, boucle de jeu) rejoué dans un DOM simulé
+avant et après corrections : **zéro erreur JavaScript non
+attrapée** dans les deux cas.
+
+### Liste des tests à effectuer (sur de vrais appareils/navigateurs)
+
+Un audit de code ne peut pas remplacer un test réel. À vérifier
+manuellement avant toute publication :
+
+1. **Chemins de fichiers / GitHub Pages** — déployer sur
+   `https://<compte>.github.io/Fourmizred/` et vérifier qu'aucune
+   ressource ne renvoie 404 (onglet Réseau des outils de
+   développement), y compris après un rechargement forcé.
+2. **Service Worker** — dans les outils de développement (onglet
+   Application/Service Workers), vérifier qu'il s'enregistre sans
+   erreur, que le cache `ant-commander-cache-v14` contient bien les
+   25 fichiers attendus, et qu'une mise à jour du numéro de version
+   remplace proprement l'ancien cache.
+3. **Fonctionnement hors ligne** — charger le jeu une première fois
+   en ligne, couper complètement le réseau (mode avion), recharger la
+   page : le jeu doit démarrer normalement.
+4. **Manifest / installation PWA** — vérifier que le navigateur
+   propose « Ajouter à l'écran d'accueil »/« Installer », que l'icône
+   et le nom affichés sont corrects, et que l'app installée s'ouvre
+   en plein écran (`display: standalone`).
+5. **IndexedDB** — sauvegarder, fermer complètement l'onglet/le
+   navigateur, rouvrir : la sauvegarde automatique doit reprendre la
+   partie exactement où elle en était. Tester aussi en navigation
+   privée (IndexedDB peut y être restreint).
+6. **LocalStorage** — confirmer qu'aucune donnée n'y est écrite
+   (onglet Application des outils de développement) : le projet ne
+   l'utilise pas à ce jour.
+7. **Tactile Android** — sur un vrai téléphone : glisser à un doigt
+   (caméra), pincer à deux doigts (zoom), taper un bâtiment/une unité
+   ennemie/un nœud de ressource, ouvrir chacun des 5 panneaux du menu
+   du bas et vérifier qu'aucun bouton n'est coupé ou trop petit pour
+   le pouce.
+8. **Orientation écran** — faire pivoter l'appareil en cours de
+   partie (portrait ↔ paysage) : la mise en page doit s'adapter sans
+   perte de la partie en cours, y compris avec le clavier virtuel
+   ouvert (Android).
+9. **Sauvegarde** — tester les 4 boutons du panneau Partie (Annuler
+   les ordres, Sauvegarder, Charger, Nouvelle partie) individuellement
+   et vérifier les messages dans la console en cas d'échec simulé
+   (ex. quota IndexedDB dépassé).
+10. **Chargement** — mesurer le temps entre l'ouverture de la page et
+    la disparition de l'écran de chargement sur une connexion lente
+    (limitation réseau des outils de développement) et en 3G simulée.
+11. **Performances** — laisser une partie tourner longtemps avec
+    beaucoup d'unités et de combats simultanés ; surveiller le taux
+    d'images (onglet Performances) et la mémoire (fuite éventuelle).
+12. **Erreurs JavaScript** — garder la console ouverte pendant une
+    session de jeu complète (production, construction, recherche,
+    mission, victoire, défaite) et vérifier qu'aucune erreur
+    n'apparaît.
+13. **Fichiers manquants** — vérifier le build APK Android
+    (`android/README-APK.md`, §9) génère bien un `.apk` sans erreur
+    de ressource manquante à la compilation.
+14. **Ressources externes** — confirmer dans l'onglet Réseau qu'aucune
+    requête ne part vers un domaine autre que celui du jeu lui-même,
+    ni en jeu ni au chargement.
+15. **Compatibilité WebView** — installer l'APK sur au moins deux
+    versions différentes d'Android (une ancienne, une récente) et
+    vérifier : plein écran, bouton retour (fermeture de panneau puis
+    confirmation de sortie), sauvegarde IndexedDB, rotation d'écran
+    sans perte de partie.
+
+---
+
 ## Prochaine étape
 
-En attente de validation avant de démarrer la **VAGUE 15**.
+En attente de validation avant de démarrer la **VAGUE 16**.
