@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="css/reset.css">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/mobile.css">
+<link rel="stylesheet" href="css/menu.css">
 </head>
 <body>
 
@@ -32,11 +33,45 @@
 
 <canvas id="canvas-jeu"></canvas>
 
+<!-- ===========================================================
+     INTERFACE TACTILE (vague 13) — construite entièrement par
+     js/ui.js. Le HTML ci-dessous ne contient que les conteneurs
+     vides ; aucun bouton n'est câblé ici pour garder tout le
+     comportement dans un seul fichier facile à auditer.
+     =========================================================== -->
+
+<!-- Barre de ressources compacte, en haut, sous statut-reseau -->
+<div id="barre-ressources" aria-hidden="true"></div>
+
+<!-- Panneau extensible (production / construction / recherche /
+     missions / partie), affiché juste au-dessus de la barre d'outils -->
+<div id="panneau-menu" class="masque"></div>
+
+<!-- Barre d'outils compacte, en bas, toujours visible -->
+<nav id="barre-outils" aria-label="Menu du jeu"></nav>
+
+<!-- Bouton plein écran, coin haut-gauche pour ne pas gêner le statut réseau -->
+<button id="bouton-plein-ecran" aria-label="Plein écran" title="Plein écran">⛶</button>
+
+<!-- Boîte de dialogue générique (confirmation mission / nouvelle
+     partie / quitter), un seul gabarit réutilisé pour toutes -->
+<div id="boite-dialogue" class="masque">
+  <div class="boite-dialogue-contenu">
+    <p id="boite-dialogue-texte"></p>
+    <div class="boite-dialogue-actions">
+      <button id="boite-dialogue-annuler" class="bouton-secondaire"></button>
+      <button id="boite-dialogue-confirmer" class="bouton-principal"></button>
+    </div>
+  </div>
+</div>
+
 <!-- Ordre important : config/utils/state d'abord (aucun appel de fonction
      immédiat), puis camera/input/renderer (définissent des fonctions
      utilisées par main.js), et main.js en dernier car il orchestre tout
      le reste dès son chargement (enregistrerServiceWorker(), initialiserInput(),
-     boucle() sont appelés immédiatement) -->
+     boucle() sont appelés immédiatement). js/ui.js vient tout en dernier :
+     il ne fait que lire l'état et appeler les fonctions déjà définies par
+     les modules précédents, jamais l'inverse. -->
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/state.js"></script>
@@ -52,5 +87,6 @@
 <script src="js/storage.js"></script>
 <script src="js/renderer.js"></script>
 <script src="js/main.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>

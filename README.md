@@ -600,8 +600,124 @@ mission en cours) à travers une sauvegarde/rechargement complet.
 
 ---
 
+## État du projet — VAGUE 13 (interface tactile + optimisation Android) terminée
+
+Jusqu'ici, tout ce qui dépassait la caméra (production, construction,
+recherche, missions, sauvegarde) ne se déclenchait qu'au clavier
+(`RACCOURCIS_PRODUCTION`, `RACCOURCIS_DEFENSE`, `RACCOURCIS_LABORATOIRE`,
+S/L/Suppr/C dans `main.js`) — injouable sur un téléphone sans clavier
+physique. Cette vague ajoute une interface tactile complète qui
+déclenche exactement les mêmes fonctions, sans toucher à un seul
+coût, une seule durée, ni au comportement d'aucun module de jeu.
+
+### Ce qui a été ajouté
+
+- **`js/ui.js`** (nouveau) — construit toute l'interface en HTML
+  généré dynamiquement : barre de ressources compacte, barre
+  d'outils du bas (5 boutons : Produire, Bâtir, Recherche, Missions,
+  Partie), panneau extensible au-dessus (un seul ouvert à la fois),
+  bannière de mode de placement (défense/laboratoire armé, avec
+  bouton Annuler), boîte de dialogue de confirmation générique.
+  Chaque bouton appelle une fonction déjà existante :
+  `mettreEnFileProduction`, `activerPlacementDefense`,
+  `activerPlacementLaboratoire`, `mettreEnFileRecherche`,
+  `demarrerMission`, `annulerOrdres`, `sauvegarderPartie`,
+  `chargerPartie`. Les raccourcis clavier restent fonctionnels tels
+  quels (rien retiré de `main.js`) — clavier et tactile cohabitent.
+- **`js/ui.js`** — gestion du **retour arrière Android** par la
+  History API : un état factice est empilé au chargement : le
+  premier retour ferme la boîte de dialogue ouverte, sinon le
+  panneau ouvert, et ce n'est qu'une fois l'écran de jeu « nu » qu'un
+  retour arrière propose une confirmation avant de laisser
+  l'application se fermer réellement.
+- **`js/ui.js`** — **plein écran** (Fullscreen API) via un bouton
+  dédié (coin haut-gauche) plus une tentative discrète à la toute
+  première pression tactile de la session (un geste utilisateur est
+  requis par les navigateurs ; échoue silencieusement si refusé).
+- **`js/ui.js`** — `demarrerPartieLibre()` : bouton « Nouvelle
+  partie » dans le panneau Partie, reprend la même séquence que la
+  branche « aucune sauvegarde » de `demarrerPartie()`
+  (`storage.js`, inchangée) — jusqu'ici accessible uniquement en
+  rechargeant la page.
+- **`css/menu.css`** (nouveau) — présentation de toute l'interface
+  ci-dessus : cibles tactiles ≥ 48px (souvent 56px+), marges
+  `env(safe-area-inset-*)` pour encoches et barre de gestes Android,
+  tailles de police en `clamp()`, grille de boutons qui se reforme
+  automatiquement (`auto-fill`) du petit téléphone à la tablette,
+  ajustement dédié au paysage bas (barre d'outils et panneau
+  compactés, étiquettes de texte masquées, icônes seules).
+- **`js/renderer.js`** — la surcouche de diagnostic canvas (position
+  caméra, zoom, horloge) est désormais masquée par défaut derrière
+  un booléen `afficherSurcoucheDebug` (bascule : touche **D**,
+  desktop uniquement) — remplacée pour le joueur par la vraie barre
+  de ressources HTML de `ui.js`, lisible sur petit écran. Aucun
+  changement de ce qui est calculé, uniquement de ce qui est dessiné.
+- **`index.html`** — conteneurs vides pour l'interface (remplis par
+  `js/ui.js`), lien vers `css/menu.css`, `viewport` déjà correct
+  depuis la vague 1 (`user-scalable=no` + zoom à deux doigts géré
+  en interne par `camera.js`/`input.js`, pas de conflit).
+- **`sw.js`** — `css/menu.css` et `js/ui.js` ajoutés au précache,
+  `CACHE_NAME` incrémenté (`v13` → `v14`) pour forcer la mise à jour
+  chez les visiteurs déjà installés.
+- **`js/config.js`** — `VERSION_JEU` : `0.1.0` → `0.2.0`.
+
+### Récapitulatif de la checklist Android demandée
+
+| Point demandé | État | Détail |
+|---|---|---|
+| Commandes tactiles | ✅ déjà en place (vague 1) + ✅ complété | Caméra/sélection/ordres tactiles existaient déjà (`input.js`, événements Pointer unifiés souris/tactile) ; production/construction/recherche/missions/sauvegarde étaient clavier-only, désormais tactiles (`ui.js`) |
+| Boutons de grande taille | ✅ nouveau | Barre d'outils ≥ 56px de haut, cartes de panneau ≥ 52px, dialogue ≥ 48px (`menu.css`) |
+| Orientation portrait et paysage | ✅ déjà en place + ✅ affiné | `manifest.webmanifest` avait déjà `orientation: any` ; ajustement dédié au paysage bas ajouté dans `menu.css` |
+| Zoom à deux doigts | ✅ déjà en place (vague 1) | Pincement géré dans `input.js`/`camera.js` depuis la toute première vague, non modifié |
+| Déplacement tactile | ✅ déjà en place (vague 1) | Glisser à un doigt, non modifié |
+| Menu compact | ✅ nouveau | Un seul panneau ouvert à la fois, ancré au-dessus d'une barre d'outils à 5 icônes, jamais plein écran |
+| Retour arrière contrôlé | ✅ nouveau | History API : ferme panneau/dialogue puis confirme avant de quitter (voir plus haut) |
+| Plein écran | ✅ nouveau | Bouton dédié + tentative au premier tap |
+| Écran de chargement | ✅ déjà en place (vague 1) | `#ecran-chargement`, non modifié |
+| Absence de dépendance réseau | ✅ déjà en place + ✅ mis à jour | Service Worker + IndexedDB hors ligne depuis la vague 1 ; précache mis à jour avec les 2 nouveaux fichiers |
+| Affichage adapté aux petits écrans | ✅ nouveau | `clamp()` partout, grilles `auto-fill`, débordement horizontal en scroll invisible pour la barre de ressources |
+
+### Vérifications effectuées
+
+Chargement complet des 16 fichiers JS dans un DOM simulé (jsdom) :
+aucune exception. Les 5 panneaux s'ouvrent et se ferment sans
+erreur. Bouton de production correctement relié à
+`mettreEnFileProduction` (file d'attente de la nurserie incrémentée).
+Armement d'une défense : bannière affichée avec le bon libellé,
+bouton Annuler qui remet bien `modePlacementDefense` à `null`.
+Panneau Missions : mission 2 correctement grisée/désactivée tant que
+la mission 1 n'est pas terminée ; clic sur une mission débloquée →
+boîte de dialogue de confirmation → partie mise en pause
+(`temps.enPause`) → confirmation → `demarrerMission` appelée, mission
+active et ressources de départ appliquées. Panneau Recherche :
+bouton « Construire » affiché tant qu'aucun laboratoire du type
+correspondant n'existe. Retour arrière : premier appui ferme le
+panneau ouvert, second appui (écran nu) affiche la confirmation de
+sortie avec le bon texte ; annulation referme proprement la boîte de
+dialogue. Clic sur le bouton plein écran : aucune exception même
+dans un environnement sans support Fullscreen API (échec silencieux
+attendu). Aucun fichier de logique de jeu (`buildings.js`,
+`units.js`, `defenses.js`, `research.js`, `missions.js`,
+`combat.js`, `resources.js`, `storage.js`) n'a été modifié — seule
+la ligne d'affichage de la surcouche de debug a changé dans
+`renderer.js`.
+
+### Ce qui reste ouvert
+
+- Icônes/emoji utilisés comme substituts d'illustrations dédiées
+  (aucun asset graphique fourni pour les unités/bâtiments/défenses
+  à ce stade)
+- Pas de retour haptique (vibration) sur les actions tactiles
+- Le comportement exact du « retour arrière contrôlé » dépend en
+  partie du navigateur/contexte d'exécution (onglet Chrome, PWA
+  installée, TWA) : le mécanisme est standard (History API) mais
+  n'a pu être vérifié que par simulation, pas sur un appareil
+  Android réel — à confirmer lors d'un test physique
+- Pas de sélection multiple de production en attente dans le
+  panneau (un tap = une unité ajoutée à la file, comme au clavier)
+
+---
+
 ## Prochaine étape
 
-En attente de validation avant de démarrer la **VAGUE 3** (prévue :
-`resources.js` + `buildings.js` + `storage.js` — les premières
-ressources récoltables, le premier bâtiment posable, et la sauvegarde).
+En attente de validation avant de démarrer la **VAGUE 14**.

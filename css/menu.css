@@ -1,0 +1,353 @@
+/* ===========================================================
+   MENU — interface tactile compacte (vague 13 : optimisation
+   Android). Regroupe la barre de ressources, la barre d'outils du
+   bas, les panneaux extensibles (production / construction /
+   recherche / missions / partie) et la boîte de dialogue générique.
+
+   Tout est construit dynamiquement par js/ui.js — ce fichier ne
+   fait que de la présentation, aucune règle de jeu.
+
+   Principes suivis dans tout le fichier :
+   - cibles tactiles d'au moins 48px de côté (souvent 56px+ ici) ;
+   - marges de sécurité env(safe-area-inset-*) pour les encoches et
+     la barre de gestes Android ;
+   - tailles de police en clamp() pour rester lisibles du petit
+     téléphone à la tablette, sans jamais déborder ;
+   - un seul panneau ouvert à la fois → écran qui reste dégagé.
+   =========================================================== */
+
+#barre-ressources,
+#panneau-menu,
+#barre-outils,
+#bouton-plein-ecran,
+#boite-dialogue {
+  font-family: var(--police);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------------------------------------------------------
+   BARRE DE RESSOURCES — ligne compacte en haut de l'écran, entre
+   le bouton plein écran (gauche) et le badge réseau (droite).
+   --------------------------------------------------------- */
+#barre-ressources {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: calc(52px + max(10px, env(safe-area-inset-left)));
+  right: calc(96px + max(10px, env(safe-area-inset-right)));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--couleur-panneau);
+  border: 1px solid var(--couleur-bordure);
+  border-radius: 16px;
+  pointer-events: none; /* purement informatif, jamais un obstacle au tactile */
+}
+#barre-ressources::-webkit-scrollbar { display: none; }
+
+#barre-ressources .jeton {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-size: clamp(11px, 3.2vw, 13px);
+  font-weight: bold;
+  color: var(--couleur-texte);
+  padding-right: 10px;
+}
+#barre-ressources .jeton:last-child { padding-right: 0; }
+
+/* ---------------------------------------------------------
+   BOUTON PLEIN ÉCRAN — coin haut-gauche, symétrique du badge réseau.
+   --------------------------------------------------------- */
+#bouton-plein-ecran {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 41;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--couleur-bordure);
+  background: var(--couleur-panneau);
+  color: var(--couleur-accent-fort);
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+#bouton-plein-ecran:active {
+  background: var(--couleur-panneau-fort);
+}
+
+/* ---------------------------------------------------------
+   BARRE D'OUTILS — toujours visible, en bas de l'écran. Chaque
+   bouton ouvre/ferme le panneau correspondant (menu compact : un
+   seul niveau, une seule chose ouverte à la fois).
+   --------------------------------------------------------- */
+#barre-outils {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 42;
+  display: flex;
+  background: var(--couleur-panneau-fort);
+  border-top: 1px solid var(--couleur-bordure);
+  padding: 4px max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+  gap: 4px;
+}
+
+#barre-outils button {
+  flex: 1 1 0;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--couleur-texte);
+  touch-action: manipulation;
+}
+#barre-outils button .icone { font-size: clamp(18px, 5.5vw, 24px); line-height: 1; }
+#barre-outils button .etiquette { font-size: clamp(9px, 2.6vw, 11px); }
+
+#barre-outils button.actif {
+  background: var(--couleur-accent);
+  color: #16110a;
+}
+#barre-outils button:active { background: rgba(217, 162, 92, 0.35); }
+
+/* ---------------------------------------------------------
+   PANNEAU EXTENSIBLE — production / construction / recherche /
+   missions / partie. Toujours ancré juste au-dessus de la barre
+   d'outils, jamais plein écran, pour garder le champ de bataille
+   visible pendant qu'on choisit une action.
+   --------------------------------------------------------- */
+#panneau-menu {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  z-index: 41;
+  max-height: 42vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--couleur-panneau-fort);
+  border-top: 1px solid var(--couleur-bordure);
+  padding: 10px max(10px, env(safe-area-inset-right)) 10px max(10px, env(safe-area-inset-left));
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+#panneau-menu.masque {
+  transform: translateY(12px);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+#panneau-menu h2 {
+  font-size: clamp(13px, 3.6vw, 15px);
+  color: var(--couleur-accent-fort);
+  margin: 0 0 8px;
+}
+
+#panneau-menu .grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+#panneau-menu .carte {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 52px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--couleur-bordure);
+  border-radius: 10px;
+  color: var(--couleur-texte);
+  text-align: left;
+  touch-action: manipulation;
+}
+#panneau-menu .carte:active { background: rgba(217, 162, 92, 0.25); }
+#panneau-menu .carte .titre { font-size: clamp(12px, 3.2vw, 13.5px); font-weight: bold; }
+#panneau-menu .carte .detail { font-size: clamp(10.5px, 2.8vw, 12px); opacity: 0.8; }
+
+#panneau-menu .carte.desactive {
+  opacity: 0.4;
+  pointer-events: none;
+}
+#panneau-menu .carte.selectionnee {
+  border-color: var(--couleur-accent-fort);
+  background: rgba(217, 162, 92, 0.2);
+}
+
+#panneau-menu .ligne-liste {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--couleur-bordure);
+  border-radius: 10px;
+  color: var(--couleur-texte);
+  touch-action: manipulation;
+}
+#panneau-menu .ligne-liste:active { background: rgba(217, 162, 92, 0.25); }
+#panneau-menu .ligne-liste.desactive { opacity: 0.4; pointer-events: none; }
+#panneau-menu .ligne-liste .titre { font-size: clamp(12px, 3.2vw, 13.5px); font-weight: bold; }
+#panneau-menu .ligne-liste .detail { font-size: clamp(10.5px, 2.8vw, 12px); opacity: 0.8; }
+
+#panneau-menu .texte-info {
+  font-size: clamp(11px, 3vw, 12.5px);
+  opacity: 0.75;
+  margin: 4px 0 10px;
+}
+
+#panneau-menu .sous-titre {
+  font-size: clamp(11px, 3vw, 12.5px);
+  color: var(--couleur-accent-fort);
+  margin: 12px 0 6px;
+}
+
+/* ---------------------------------------------------------
+   BOÎTE DE DIALOGUE GÉNÉRIQUE — confirmation avant toute action
+   destructive côté interface (nouvelle mission, nouvelle partie,
+   quitter). N'existait dans aucune vague précédente : ces actions
+   se faisaient au clavier sans confirmation.
+   --------------------------------------------------------- */
+#boite-dialogue {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+}
+#boite-dialogue.masque {
+  display: none;
+}
+
+.boite-dialogue-contenu {
+  width: 100%;
+  max-width: 320px;
+  background: var(--couleur-panneau-fort);
+  border: 1px solid var(--couleur-bordure);
+  border-radius: 14px;
+  padding: 18px;
+}
+#boite-dialogue-texte {
+  font-size: clamp(13px, 3.6vw, 15px);
+  color: var(--couleur-texte);
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+.boite-dialogue-actions {
+  display: flex;
+  gap: 10px;
+}
+.boite-dialogue-actions button {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 10px;
+  font-size: clamp(12.5px, 3.4vw, 14px);
+  font-weight: bold;
+  touch-action: manipulation;
+}
+.bouton-secondaire {
+  background: transparent;
+  border: 1px solid var(--couleur-bordure);
+  color: var(--couleur-texte);
+}
+.bouton-principal {
+  background: var(--couleur-accent);
+  border: 1px solid var(--couleur-accent);
+  color: #16110a;
+}
+
+/* ---------------------------------------------------------
+   PAYSAGE SUR PETIT ÉCRAN — la barre d'outils et le panneau
+   prennent proportionnellement plus de hauteur utile qu'en
+   portrait ; on les compacte pour laisser le terrain de jeu visible.
+   --------------------------------------------------------- */
+@media (max-height: 480px) and (orientation: landscape) {
+  #barre-outils button { min-height: 44px; }
+  #barre-outils button .etiquette { display: none; } /* icône seule suffit, gain de place vertical */
+  #panneau-menu { max-height: 62vh; bottom: calc(52px + env(safe-area-inset-bottom)); }
+  #barre-ressources { height: 26px; }
+}
+
+/* ---------------------------------------------------------
+   TRÈS PETITS ÉCRANS EN PORTRAIT — resserre encore la grille de
+   cartes pour éviter le débordement horizontal.
+   --------------------------------------------------------- */
+@media (max-width: 340px) {
+  #panneau-menu .grille { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+  #barre-ressources { left: calc(46px + max(8px, env(safe-area-inset-left))); right: calc(80px + max(8px, env(safe-area-inset-right))); }
+}
+
+/* ---------------------------------------------------------
+   BANNIÈRE DE MODE DE PLACEMENT — apparaît quand une défense ou un
+   laboratoire est armé (voir js/ui.js), pour donner sur tactile
+   l'équivalent visuel du message console existant sur desktop.
+   --------------------------------------------------------- */
+#banniere-placement {
+  position: fixed;
+  top: calc(48px + max(10px, env(safe-area-inset-top)));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 43;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 10px 8px 14px;
+  background: var(--couleur-panneau-fort);
+  border: 1px solid var(--couleur-accent);
+  border-radius: 20px;
+  font-size: clamp(11px, 3.2vw, 13px);
+  color: var(--couleur-texte);
+}
+#banniere-placement.masque { display: none; }
+#banniere-placement span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#banniere-placement button {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid var(--couleur-bordure);
+  background: transparent;
+  color: var(--couleur-accent-fort);
+  font-size: clamp(11px, 3vw, 12.5px);
+  touch-action: manipulation;
+}
+
+/* ---------------------------------------------------------
+   PLEIN ÉCRAN ACTIF — état visuel du bouton bascule (rempli au
+   lieu de contour simple) une fois la Fullscreen API activée par
+   js/ui.js.
+   --------------------------------------------------------- */
+#bouton-plein-ecran.actif {
+  background: var(--couleur-accent);
+  color: #16110a;
+}

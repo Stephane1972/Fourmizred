@@ -22,7 +22,7 @@ const BASE_PATH = "/Fourmizred/";
 // Version du jeu — sert aussi à nommer le cache du service worker
 // (voir sw.js). Incrémentez cette chaîne à chaque changement de
 // fichiers précachés pour forcer la mise à jour du cache hors ligne.
-const VERSION_JEU = "0.1.0";
+const VERSION_JEU = "0.2.0";
 
 // Nom affiché dans l'interface (jamais le nom d'un jeu protégé)
 const NOM_JEU = "Ant Commander";

@@ -233,10 +233,19 @@ function rendreScene(temps) {
 
   ctx.restore();
 
-  dessinerSurcoucheDebug(temps);
+  // Vague 13 : la vraie barre de ressources est désormais affichée par
+  // js/ui.js (HTML, lisible sur petit écran) — la surcouche de debug
+  // canvas ci-dessous reste disponible pour le développement mais
+  // masquée par défaut (bascule : touche D, voir ui.js).
+  if (afficherSurcoucheDebug) dessinerSurcoucheDebug(temps);
   dessinerPanneauMission();
   dessinerEcranFinDePartie();
 }
+
+// Bascule de la surcouche de diagnostic (position caméra, zoom,
+// horloge de partie) — utile en développement, masquée par défaut
+// pour ne pas polluer l'écran sur mobile. Voir ui.js pour la touche.
+let afficherSurcoucheDebug = false;
 
 // Voile sombre + message centré, dessiné par-dessus toute la scène
 // (en coordonnées écran, donc non affecté par la caméra) une fois
