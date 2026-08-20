@@ -77,7 +77,25 @@ jobs:
 
       - name: Compiler l'APK (debug)
         working-directory: android
-        run: gradle assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleDebug --stacktrace 2>&1 | tee ../build-log-diagnostic.txt
+
+      # ---------------------------------------------------------
+      # ÉTAPE DE DIAGNOSTIC TEMPORAIRE — à retirer une fois le pipeline
+      # confirmé fonctionnel. Publie le journal de compilation complet
+      # comme fichier du dépôt (au lieu d'un artefact/log Actions, non
+      # accessibles par ailleurs) uniquement quand la compilation a
+      # échoué, pour permettre un diagnostic précis à distance.
+      # ---------------------------------------------------------
+      - name: "[Diagnostic] Publier le journal en cas d'échec"
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f build-log-diagnostic.txt
+          git commit -m "CI [diagnostic] : journal de compilation (run ${{ github.run_number }}, echec)" || echo "Rien a committer"
+          git push
 
       - name: Lire la version du jeu (js/config.js)
         id: version
