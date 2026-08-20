@@ -343,8 +343,9 @@ moment, depuis l'onglet **Actions** du dépôt GitHub (bouton
 
 **Ce qu'il fait**, dans l'ordre :
 
-1. Installe un JDK 17 et le SDK Android (plateforme 34 + build-tools)
-   sur un runner GitHub temporaire.
+1. Installe un JDK 17 (le SDK Android est déjà présent sur les
+   runners GitHub "ubuntu-latest" — inutile de le réinstaller, voir
+   le commentaire du workflow pour le détail de ce choix).
 2. Copie le jeu web dans `android/app/src/main/assets/www/` — le
    même script que celui utilisable en local, `scripts/copier-assets-android.sh`
    (voir §2) : le workflow ne fait rien de différent de ce que vous

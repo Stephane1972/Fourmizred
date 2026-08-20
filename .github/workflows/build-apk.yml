@@ -46,14 +46,27 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Installer le SDK Android
-        uses: android-actions/setup-android@v3
-
-      - name: Installer la plateforme et les build-tools Android 34
-        run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+      # Le SDK Android n'est PAS installé explicitement ici : les runners
+      # GitHub "ubuntu-latest" en fournissent déjà un, complet (plateformes
+      # et build-tools récents, licences déjà acceptées) — c'est d'ailleurs
+      # ainsi que fonctionnait le tout premier pipeline Android de ce
+      # dépôt (workflow "Build Android APK", historique antérieur à la
+      # VAGUE 1 de la série actuelle). Réinstaller un second SDK par-dessus
+      # (ex. via android-actions/setup-android) risque de faire pointer
+      # ANDROID_HOME vers un autre emplacement que celui réellement utilisé
+      # par Gradle, sans aucun bénéfice ici.
+      - name: Vérifier les licences du SDK Android déjà présent
+        run: yes | sdkmanager --licenses > /dev/null || true
 
       - name: Préparer Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          # Version fixée explicitement (au lieu de laisser l'action
+          # choisir) pour rester alignée avec android/gradle/wrapper/
+          # gradle-wrapper.properties (utilisé par Android Studio en
+          # local) et avec le plugin Android 8.5.2 (android/build.gradle),
+          # qui requiert Gradle 8.7 ou plus récent.
+          gradle-version: "8.7"
 
       - name: Copier le jeu web dans les assets Android
         # Fait aussi automatiquement par la tâche "copierAssetsWeb"
