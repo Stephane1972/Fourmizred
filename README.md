@@ -916,6 +916,65 @@ manuellement avant toute publication :
 
 ---
 
+## État du projet — VAGUE 16 (build APK automatique + téléchargement) terminée
+
+La vague 14 avait préparé le projet Android (`android/`) mais sa
+compilation nécessitait Android Studio en local — pas pratique pour
+simplement récupérer un fichier `.apk` à installer. Cette vague ajoute
+un pipeline **GitHub Actions** qui compile l'APK sur les serveurs de
+GitHub à chaque mise à jour du jeu et le publie avec un lien de
+téléchargement stable, sans aucune installation nécessaire.
+
+### Ce qui a été ajouté
+
+- **`.github/workflows/build-apk.yml`** (nouveau) — se déclenche à
+  chaque `push` sur `main` touchant `android/`, `js/`, `css/`,
+  `index.html`, `manifest.webmanifest` ou `assets/icons/`, ou
+  manuellement depuis l'onglet Actions. Installe JDK 17 + SDK Android,
+  copie le jeu web dans les assets Android (même script que le §2 du
+  guide Android, `scripts/copier-assets-android.sh` — le workflow ne
+  fait rien que vous ne puissiez faire vous-même en local), compile
+  l'APK debug (`gradle assembleDebug`), puis le publie en **Release
+  GitHub** nommée avec la version lue directement dans
+  `js/config.js` (`VERSION_JEU`).
+- **`android/README-APK.md`** — nouvelle section 11 documentant ce
+  pipeline ; section 9 réorganisée pour mettre en avant cette méthode
+  automatique (aucune installation) au-dessus de la méthode manuelle
+  via Android Studio (toujours documentée, utile pour modifier le
+  code natif) ; correction d'une phrase de la section 10 qui faisait
+  référence à un « workflow GitHub Actions du README principal »
+  inexistant à l'époque — désormais exact.
+
+### Où télécharger l'APK
+
+Onglet **Releases** du dépôt
+(`https://github.com/Stephane1972/Fourmizred/releases`) → dernière
+Release → `app-debug.apk` dans la section « Assets ». Toujours un
+build *debug* (voir `android/README-APK.md` §10 pour le build release
+signé, non encore mis en place).
+
+### Vérifications effectuées
+
+Fichier YAML du workflow validé avec un analyseur YAML (structure,
+9 étapes, déclencheurs `push`/`workflow_dispatch` corrects). Extraction
+de `VERSION_JEU` depuis `js/config.js` testée en ligne de commande
+(résultat exact : `0.2.0`). `scripts/copier-assets-android.sh`
+réexécuté avec succès depuis la racine du dépôt (25 fichiers copiés,
+syntaxe JS revérifiée après copie). Aucun fichier de logique de jeu
+ni du projet Android existant n'a été modifié — seule la
+documentation (`android/README-APK.md`) a reçu des ajouts/corrections
+ciblés.
+
+### Ce qui reste ouvert
+
+- Le premier déclenchement réel du workflow sur les serveurs GitHub
+  n'a pas pu être observé depuis cet environnement (pas d'accès à
+  l'onglet Actions) — à vérifier après le push.
+- Build release signé (Play Store) toujours non mis en place, comme
+  déjà noté dans `android/README-APK.md` §10.
+
+---
+
 ## Prochaine étape
 
-En attente de validation avant de démarrer la **VAGUE 16**.
+En attente de validation avant de démarrer la **VAGUE 17**.

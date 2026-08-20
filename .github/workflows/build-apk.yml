@@ -1,0 +1,90 @@
+# ===========================================================
+# BUILD APK — compile automatiquement le projet Android (android/,
+# vague 14) et publie l'APK obtenu en Release GitHub, avec un lien
+# de téléchargement stable (pas besoin d'installer Android Studio
+# pour simplement récupérer le fichier .apk).
+#
+# Se déclenche uniquement quand quelque chose qui affecte réellement
+# l'APK a changé (le jeu web embarqué, ou le projet Android
+# lui-même), ou manuellement depuis l'onglet "Actions" du dépôt.
+#
+# Build "debug" uniquement (signature de développement automatique) :
+# suffisant pour installer/tester sur un téléphone, pas pour publier
+# sur le Play Store. Voir android/README-APK.md, section 10, pour un
+# build "release" signé.
+# ===========================================================
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "js/**"
+      - "css/**"
+      - "index.html"
+      - "manifest.webmanifest"
+      - "assets/icons/**"
+      - "scripts/copier-assets-android.sh"
+      - ".github/workflows/build-apk.yml"
+  workflow_dispatch: {}
+
+# Nécessaire pour que ce workflow puisse créer une Release GitHub.
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer le JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Installer le SDK Android
+        uses: android-actions/setup-android@v3
+
+      - name: Installer la plateforme et les build-tools Android 34
+        run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Préparer Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Copier le jeu web dans les assets Android
+        # Fait aussi automatiquement par la tâche "copierAssetsWeb"
+        # (voir android/app/build.gradle, dépendance de preBuild) —
+        # exécuté ici explicitement pour que l'étape soit visible dans
+        # les journaux du workflow.
+        run: ./scripts/copier-assets-android.sh
+
+      - name: Compiler l'APK (debug)
+        working-directory: android
+        run: gradle assembleDebug --stacktrace
+
+      - name: Lire la version du jeu (js/config.js)
+        id: version
+        run: |
+          VERSION=$(grep -oE 'VERSION_JEU = "[^"]+"' js/config.js | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publier l'APK en Release GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-v${{ steps.version.outputs.version }}-${{ github.run_number }}
+          name: "Ant Commander — APK v${{ steps.version.outputs.version }} (build ${{ github.run_number }})"
+          body: |
+            APK Android généré automatiquement depuis le commit
+            ${{ github.sha }} (build debug, non signé — voir
+            android/README-APK.md, section 10, pour un build release
+            signé destiné au Play Store).
+
+            Installation : téléchargez `app-debug.apk` ci-dessous,
+            transférez-le sur votre téléphone Android, puis ouvrez-le
+            (autorisation "installer des applications inconnues"
+            requise la première fois).
+          files: android/app/build/outputs/apk/debug/app-debug.apk

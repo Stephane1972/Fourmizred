@@ -253,7 +253,14 @@ chargement (natif puis HTML) donnent l'impression d'un seul et même
 
 ## 9. Construire l'APK
 
-**Avec Android Studio (recommandé) :**
+**Méthode automatique (recommandée) — via GitHub Actions, voir §11.**
+Aucune installation nécessaire : un lien de téléchargement direct de
+l'APK est généré automatiquement à chaque mise à jour du jeu. C'est
+la méthode la plus simple si vous voulez seulement installer le jeu
+sur un téléphone sans mettre en place d'environnement de
+développement Android.
+
+**Avec Android Studio (pour modifier le code natif) :**
 
 1. `Fichier → Ouvrir...` et sélectionner le dossier `android/` (pas la
    racine du dépôt).
@@ -280,26 +287,26 @@ cd android
 
 > **Sur la distinction "outils de build" / "application hors ligne"** :
 > télécharger Gradle et les deux bibliothèques Android ci-dessus se
-> produit une fois, sur votre ordinateur, pendant que vous développez
-> — exactement comme n'importe quel projet Android, Java ou npm.
-> Cela n'a **aucun rapport** avec le comportement de l'APK une fois
-> installé sur un téléphone : celui-ci ne demande la permission
-> INTERNET nulle part (§3) et ne peut donc, par construction, faire
-> aucun appel réseau, qu'il soit connecté au Wi-Fi/4G ou non.
+> produit une fois, sur votre ordinateur (ou sur les serveurs GitHub
+> pour la méthode automatique, §11), pendant la compilation — exactement
+> comme n'importe quel projet Android, Java ou npm. Cela n'a **aucun
+> rapport** avec le comportement de l'APK une fois installé sur un
+> téléphone : celui-ci ne demande la permission INTERNET nulle part
+> (§3) et ne peut donc, par construction, faire aucun appel réseau,
+> qu'il soit connecté au Wi-Fi/4G ou non.
 
 ---
 
 ## 10. Ce qui reste ouvert
 
-- **Build release signé** : l'APK généré ci-dessus est un build
-  *debug* (signature de développement automatique), suffisant pour
-  tester/installer manuellement mais pas pour publier (Play Store ou
-  distribution large), comme déjà noté pour le workflow GitHub Actions
-  du `README.md` principal. Nécessite de créer un keystore
-  (`keytool -genkey ...`) et de configurer `signingConfigs` dans
-  `app/build.gradle` — volontairement absent ici, une clé de
-  signature ne doit jamais être générée ni stockée sans votre
-  validation explicite.
+- **Build release signé** : l'APK généré (à la main comme via
+  GitHub Actions, §11) est un build *debug* (signature de
+  développement automatique), suffisant pour tester/installer
+  manuellement mais pas pour publier (Play Store ou distribution
+  large). Nécessite de créer un keystore (`keytool -genkey ...`) et
+  de configurer `signingConfigs` dans `app/build.gradle` —
+  volontairement absent ici, une clé de signature ne doit jamais
+  être générée ni stockée sans votre validation explicite.
 - **Icônes adaptatives** (Android 8+, fond et premier plan séparés,
   avec animations système) : non incluses — nécessiteraient un
   premier plan détouré sur fond transparent, absent des assets
@@ -318,3 +325,46 @@ cd android
   Android réel — à confirmer lors d'un premier build.
 - Pas de retour haptique (vibration) sur les actions tactiles, comme
   déjà noté pour l'interface de la vague 13.
+
+---
+
+## 11. Build automatique et téléchargement (GitHub Actions)
+
+**`.github/workflows/build-apk.yml`** (VAGUE 16) compile l'APK
+automatiquement sur les serveurs de GitHub — inutile d'installer quoi
+que ce soit sur votre ordinateur pour obtenir un fichier `.apk`
+installable.
+
+**Quand il se déclenche** : à chaque `push` sur `main` qui touche
+`android/`, `js/`, `css/`, `index.html`, `manifest.webmanifest`,
+`assets/icons/` ou le workflow lui-même — ou manuellement, à tout
+moment, depuis l'onglet **Actions** du dépôt GitHub (bouton
+« Run workflow », en choisissant `build-apk.yml`).
+
+**Ce qu'il fait**, dans l'ordre :
+
+1. Installe un JDK 17 et le SDK Android (plateforme 34 + build-tools)
+   sur un runner GitHub temporaire.
+2. Copie le jeu web dans `android/app/src/main/assets/www/` — le
+   même script que celui utilisable en local, `scripts/copier-assets-android.sh`
+   (voir §2) : le workflow ne fait rien de différent de ce que vous
+   pourriez faire vous-même.
+3. Compile l'APK debug (`gradle assembleDebug`, équivalent exact de
+   `./gradlew assembleDebug` au §9, juste sans wrapper committé — voir
+   §10 sur `gradle-wrapper.jar`).
+4. Lit la version du jeu directement dans `js/config.js`
+   (`VERSION_JEU`), pour que le nom de la Release reste toujours
+   synchronisé avec le code réellement compilé.
+5. Publie l'APK obtenu en **Release GitHub**, avec un lien de
+   téléchargement stable et permanent — pas un artefact de build
+   temporaire qui expire.
+
+**Pour télécharger l'APK** : onglet **Releases** du dépôt (dans la
+colonne de droite de la page GitHub, ou
+`https://github.com/Stephane1972/Fourmizred/releases`) → dernière
+Release → télécharger `app-debug.apk` dans la section « Assets ».
+
+Comme au §9, c'est toujours un **build debug**, non signé pour
+publication (voir §10) — mais installable directement sur un
+téléphone Android après avoir autorisé « installer des applications
+inconnues ».
