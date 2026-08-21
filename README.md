@@ -965,13 +965,47 @@ ni du projet Android existant n'a été modifié — seule la
 documentation (`android/README-APK.md`) a reçu des ajouts/corrections
 ciblés.
 
+Le premier déclenchement réel a échoué à la compilation Gradle
+(logs Actions non consultables à distance, redirigés vers un
+stockage bloqué par le pare-feu réseau de l'environnement de
+développement) : diagnostic par republication temporaire du journal
+de compilation comme fichier du dépôt. Cause identifiée : conflit
+classique de dépendances Kotlin transitives entre `androidx.appcompat`
+et `androidx.webkit` (`Duplicate class kotlin.collections.jdk8...`) —
+corrigé par exclusion des artefacts obsolètes `kotlin-stdlib-jdk7`/
+`-jdk8` dans `android/app/build.gradle` (déjà inclus dans
+`kotlin-stdlib` 1.8+, aucune perte fonctionnelle). Une étape
+d'installation redondante du SDK Android a aussi été retirée
+(le SDK est déjà présent sur les runners GitHub `ubuntu-latest`).
+Étape de diagnostic temporaire retirée une fois la cause confirmée.
+**Le pipeline compile et publie désormais un APK avec succès** —
+première Release fonctionnelle : `apk-v0.2.0-4`.
+
+### Correctif d'équilibrage (hors vague, signalé par test de jeu réel)
+
+Après ce premier APK jouable, un test réel a révélé que la partie
+était quasiment injouable : les 6 menaces sauvages (araignées/
+scarabées) générées en partie libre fonçaient sur la fourmilière dès
+la première seconde de jeu, faute de cible joueur à détecter — la
+fourmilière (500 PV) pouvait être détruite en 10 à 15 secondes,
+avant même la production de la première unité (8 secondes minimum).
+Corrigé dans `js/combat.js`
+(`deplacerMenacesSauvages`) : une menace sans cible à proximité reste
+désormais immobile au lieu de charger le nid par défaut ; elle
+continue de chasser normalement dès qu'une unité du joueur
+s'approche (comportement de poursuite inchangé). Testé : 6 menaces
+immobiles pendant 15 s sans unité à proximité (fourmilière toujours à
+500/500 PV), poursuite confirmée dès provocation. Nouvel APK publié
+automatiquement avec le correctif : `apk-v0.2.0-5`.
+
 ### Ce qui reste ouvert
 
-- Le premier déclenchement réel du workflow sur les serveurs GitHub
-  n'a pas pu être observé depuis cet environnement (pas d'accès à
-  l'onglet Actions) — à vérifier après le push.
 - Build release signé (Play Store) toujours non mis en place, comme
   déjà noté dans `android/README-APK.md` §10.
+- L'équilibrage n'a été vérifié que pour le mode escarmouche libre ;
+  les missions incluant des ennemis sauvages (`ennemis.sauvages`
+  dans `js/missions.js`) utilisent la même fonction corrigée mais
+  n'ont pas toutes été rejouées manuellement une à une.
 
 ---
 

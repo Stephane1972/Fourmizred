@@ -369,3 +369,8 @@ Comme au §9, c'est toujours un **build debug**, non signé pour
 publication (voir §10) — mais installable directement sur un
 téléphone Android après avoir autorisé « installer des applications
 inconnues ».
+
+> **Statut** : pipeline confirmé fonctionnel de bout en bout (voir
+> `README.md` principal, section VAGUE 16, pour le détail du
+> diagnostic et du correctif appliqués après le tout premier essai).
+> Premier APK installable publié avec succès : `apk-v0.2.0-4`.
