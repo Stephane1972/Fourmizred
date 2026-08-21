@@ -148,6 +148,10 @@ function boucle(horodatageActuel) {
     mettreAJourDefenses(temps.delta);
     mettreAJourLaboratoires(temps.delta);
     mettreAJourMission(temps.delta);
+    // Détecte le mouvement de chaque unité (voir units.js) pour animer
+    // pattes et antennes dans le rendu — indépendant du rendu lui-même,
+    // pour que l'animation ne saute jamais au retour d'une unité à l'écran.
+    mettreAJourAnimationUnites(temps.delta);
   }
 
   rendreScene(temps);

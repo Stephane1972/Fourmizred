@@ -323,8 +323,50 @@ function creerInstanceUnite(typeUnite, x, y, faction) {
     typeCargo: null,
     minuteurRecolte: 0,
     tacheActuelle: 'Inactive',
-    phaseIdle: Math.random() * Math.PI * 2
+    phaseIdle: Math.random() * Math.PI * 2,
+    // Animation de déplacement (voir mettreAJourAnimationUnites, plus
+    // bas) : orientation courante, phase de balancement des pattes
+    // (avance avec la distance parcourue, pas avec le temps, pour que
+    // le rythme des pattes suive vraiment la vitesse de l'unité), et
+    // dernière position connue pour détecter le mouvement frame à frame.
+    angleDeplacement: 0,
+    enMouvement: false,
+    phaseMarche: Math.random() * Math.PI * 2,
+    derniereX: x,
+    derniereY: y
   };
+}
+
+// ---------------------------------------------------------
+// ANIMATION DE DÉPLACEMENT — détecte, pour chaque unité vivante, si
+// elle a bougé depuis la dernière frame (combat.js et resources.js
+// modifient u.x/u.y directement, sans jamais poser d'orientation ni
+// de notion de "en mouvement" : c'est ce que cette fonction déduit).
+// Appelée une fois par frame depuis main.js, indépendamment du rendu
+// (donc même pour les unités actuellement hors-écran), pour que
+// l'animation ne saute jamais quand la caméra revient sur une unité.
+// ---------------------------------------------------------
+function mettreAJourAnimationUnites(delta) {
+  for (const u of etat.unites) {
+    if (u.pv <= 0) continue;
+    const dx = u.x - u.derniereX;
+    const dy = u.y - u.derniereY;
+    const distanceParcourue = Math.hypot(dx, dy);
+
+    if (distanceParcourue > 0.02) {
+      u.angleDeplacement = Math.atan2(dy, dx);
+      u.enMouvement = true;
+      // Le rythme de balancement suit la distance réellement
+      // parcourue : une unité rapide agite ses pattes plus vite
+      // qu'une unité lente, sans dépendre du taux de rafraîchissement.
+      u.phaseMarche += distanceParcourue * 0.5;
+    } else {
+      u.enMouvement = false;
+    }
+
+    u.derniereX = u.x;
+    u.derniereY = u.y;
+  }
 }
 
 const RAYON_TOUCHE_UNITE = 20;
@@ -398,12 +440,52 @@ function dessinerUnite(ctx, u, temps) {
 
   ctx.save();
   ctx.translate(u.x, u.y + respiration);
+  // Le corps entier s'oriente vers la direction de déplacement — les
+  // pattes et antennes ci-dessous sont donc dessinées dans le repère
+  // local "vers l'avant = +x", quelle que soit la direction réelle.
+  ctx.rotate(u.angleDeplacement || 0);
 
-  // Ombre
+  // Ombre (dessinée hors rotation le temps de son propre calcul pour
+  // rester au sol, donc on la remet en coordonnées non tournées)
+  ctx.save();
+  ctx.rotate(-(u.angleDeplacement || 0));
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
   ctx.ellipse(1, 2, 7 * echelle, 3 * echelle, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+
+  // Amplitude du balancement des pattes et des antennes : bien plus
+  // marquée en mouvement, mais jamais totalement figée à l'arrêt (les
+  // antennes continuent de tâtonner doucement, comme une vraie fourmi).
+  const amplitudePattes = u.enMouvement ? 0.85 : 0.12;
+  const amplitudeAntennes = u.enMouvement ? 0.3 : 0.14;
+  const vitesseAntennesIdle = temps.total * (u.enMouvement ? 5 : 2) + u.phaseIdle;
+
+  // Pattes — 3 paires réparties le long du corps, en démarche
+  // "tripode" (les pattes avant-gauche/milieu-droite/arrière-gauche
+  // se balancent ensemble, en opposition avec les trois autres), ce
+  // qui reste le schéma de marche le plus reconnaissable chez la fourmi.
+  ctx.strokeStyle = ajusterCouleur(couleurCorps, -45);
+  ctx.lineWidth = Math.max(0.7, 1) / etat.camera.zoom;
+  const positionsAttache = [-4, -0.3, 3.6];
+  for (let i = 0; i < positionsAttache.length; i++) {
+    const attacheX = positionsAttache[i] * echelle;
+    for (const cote of [-1, 1]) {
+      const groupe = (i + (cote === -1 ? 0 : 1)) % 2;
+      const balancement = Math.sin(u.phaseMarche + groupe * Math.PI) * amplitudePattes;
+      const attacheY = cote * 3.2 * echelle;
+      const genouX = attacheX + balancement * 1.6 * echelle;
+      const genouY = cote * 5.3 * echelle;
+      const piedX = attacheX + balancement * 3.2 * echelle;
+      const piedY = cote * 7.4 * echelle;
+
+      ctx.beginPath();
+      ctx.moveTo(attacheX, attacheY);
+      ctx.quadraticCurveTo(genouX, genouY, piedX, piedY);
+      ctx.stroke();
+    }
+  }
 
   // Abdomen
   ctx.fillStyle = couleurCorps;
@@ -412,10 +494,31 @@ function dessinerUnite(ctx, u, temps) {
   ctx.fill();
 
   // Tête
+  const positionTeteX = 6 * echelle * 0.85;
   ctx.fillStyle = ajusterCouleur(couleurCorps, -30);
   ctx.beginPath();
-  ctx.ellipse(6 * echelle * 0.85, 0, 3.2 * echelle, 2.8 * echelle, 0, 0, Math.PI * 2);
+  ctx.ellipse(positionTeteX, 0, 3.2 * echelle, 2.8 * echelle, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Antennes — partent de la tête, orientées vers l'avant en éventail,
+  // et tâtonnent en continu (plus vivement quand l'unité se déplace).
+  ctx.strokeStyle = ajusterCouleur(couleurCorps, -55);
+  ctx.lineWidth = Math.max(0.6, 0.9) / etat.camera.zoom;
+  for (const cote of [-1, 1]) {
+    const tatonnement = Math.sin(vitesseAntennesIdle + cote * 0.6) * amplitudeAntennes;
+    const angle = cote * 0.55 + tatonnement;
+    const baseX = positionTeteX;
+    const baseY = cote * 1.4 * echelle;
+    const milieuX = baseX + Math.cos(angle) * 4.5 * echelle;
+    const milieuY = baseY + Math.sin(angle) * 4.5 * echelle - cote * 0.8 * echelle;
+    const pointeX = baseX + Math.cos(angle) * 8 * echelle;
+    const pointeY = baseY + Math.sin(angle) * 8 * echelle;
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY);
+    ctx.quadraticCurveTo(milieuX, milieuY, pointeX, pointeY);
+    ctx.stroke();
+  }
 
   ctx.restore();
 
