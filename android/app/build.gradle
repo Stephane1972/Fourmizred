@@ -44,6 +44,22 @@ dependencies {
 }
 
 // -----------------------------------------------------------
+// androidx.appcompat et androidx.webkit tirent chacun une version de
+// kotlin-stdlib différente en dépendance transitive (aucun des deux
+// n'est écrit en Kotlin lui-même — MainActivity.java est 100% Java —
+// mais certaines de leurs propres dépendances internes le sont).
+// kotlin-stdlib 1.8+ inclut déjà tout ce que fournissaient les anciens
+// artefacts séparés kotlin-stdlib-jdk7/-jdk8 : les exclure élimine le
+// doublon de classes sans rien retirer de fonctionnel. Correctif
+// standard pour cette erreur Gradle bien connue
+// ("Duplicate class kotlin.collections.jdk8...").
+// -----------------------------------------------------------
+configurations.all {
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+}
+
+// -----------------------------------------------------------
 // Copie automatique du jeu web (index.html, css/, js/, manifest,
 // icônes) dans assets/www/ avant chaque build, pour que l'APK
 // embarque toujours la version la plus récente du jeu sans étape
