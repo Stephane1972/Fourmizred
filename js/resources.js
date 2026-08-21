@@ -75,6 +75,20 @@ function trouverNoeudParId(id) {
   return noeudsRessource.find((n) => n.id === id) || null;
 }
 
+// Trouve, parmi les nœuds encore non épuisés, le plus proche d'un
+// point donné pour un type de ressource donné. Utilisée pour la
+// récolte continue : quand le nœud assigné à une unité est épuisé,
+// on lui en cherche un autre du même type plutôt que de l'arrêter.
+function trouverNoeudRessourceProche(type, x, y) {
+  let meilleur = null, meilleureDistance = Infinity;
+  for (const n of noeudsRessource) {
+    if (n.type !== type || n.quantite <= 0) continue;
+    const d = distance(x, y, n.x, n.y);
+    if (d < meilleureDistance) { meilleureDistance = d; meilleur = n; }
+  }
+  return meilleur;
+}
+
 // ---------------------------------------------------------
 // COLLECTE SIMPLE — toucher/cliquer un nœud prélève directement une
 // petite quantité dans le stock de la colonie. Pas encore d'unité
@@ -118,7 +132,7 @@ function donnerOrdreRecolte(unite, noeud) {
   const def = TYPES_UNITE[unite.type];
   if (!def || def.capaciteTransport <= 0) return false;
 
-  unite.fileOrdres.push({ type: 'recolter', noeudId: noeud.id });
+  unite.fileOrdres.push({ type: 'recolter', noeudId: noeud.id, typeRessource: noeud.type });
   if (unite.etatRecolte === 'idle' && unite.fileOrdres.length === 1) {
     demarrerProchainOrdreRecolte(unite);
   }
@@ -136,11 +150,24 @@ function demarrerProchainOrdreRecolte(unite) {
     return;
   }
   const ordre = unite.fileOrdres[0];
-  const noeud = trouverNoeudParId(ordre.noeudId);
+  let noeud = trouverNoeudParId(ordre.noeudId);
   if (!noeud || noeud.quantite <= 0) {
-    unite.fileOrdres.shift();
-    demarrerProchainOrdreRecolte(unite);
-    return;
+    // Le nœud assigné à cet ordre est épuisé (ou a disparu) : avant
+    // d'abandonner, on cherche un nœud de même type de ressource
+    // encore disponible, pour que la récolte continue automatiquement
+    // sans que le joueur ait à réassigner l'unité (voir aussi les
+    // mêmes bascules dans mettreAJourRecolte, plus bas).
+    const typeRessource = ordre.typeRessource || (noeud ? noeud.type : null);
+    const remplacement = typeRessource ? trouverNoeudRessourceProche(typeRessource, unite.x, unite.y) : null;
+    if (remplacement) {
+      ordre.noeudId = remplacement.id;
+      ordre.typeRessource = remplacement.type;
+      noeud = remplacement;
+    } else {
+      unite.fileOrdres.shift();
+      demarrerProchainOrdreRecolte(unite);
+      return;
+    }
   }
   unite.noeudCibleId = noeud.id;
   unite.etatRecolte = 'versRessource';
@@ -166,8 +193,18 @@ function mettreAJourRecolte(delta) {
     const def = TYPES_UNITE[u.type];
 
     if (u.etatRecolte === 'versRessource') {
-      const noeud = trouverNoeudParId(u.noeudCibleId);
+      let noeud = trouverNoeudParId(u.noeudCibleId);
       if (!noeud || noeud.quantite <= 0) {
+        const ordreActuel = u.fileOrdres[0];
+        const typeRessource = ordreActuel ? (ordreActuel.typeRessource || (noeud ? noeud.type : null)) : null;
+        const remplacement = typeRessource ? trouverNoeudRessourceProche(typeRessource, u.x, u.y) : null;
+        if (remplacement && ordreActuel) {
+          ordreActuel.noeudId = remplacement.id;
+          ordreActuel.typeRessource = remplacement.type;
+          u.noeudCibleId = remplacement.id;
+          u.tacheActuelle = 'En route vers ' + TYPES_RESSOURCE[remplacement.type].label;
+          continue;
+        }
         u.fileOrdres.shift();
         demarrerProchainOrdreRecolte(u);
         continue;
@@ -220,16 +257,30 @@ function mettreAJourRecolte(delta) {
 
         // Retour automatique : si le nœud ciblé par l'ordre en tête de
         // file a encore de la ressource, on y repart directement sans
-        // dépiler l'ordre (boucle façon Harvester). Sinon on passe au
-        // suivant dans la file, ou on repasse inactive s'il n'y en a plus.
+        // dépiler l'ordre (boucle façon Harvester). S'il est épuisé,
+        // on cherche un nœud de même type de ressource encore
+        // disponible avant d'abandonner l'ordre — la fourmi passe
+        // ainsi d'elle-même à une ressource similaire, sans
+        // intervention du joueur. Ce n'est qu'à défaut de tout
+        // remplacement qu'on dépile et qu'on passe à l'ordre suivant
+        // (ou à l'inactivité s'il n'y en a plus).
         const ordreActuel = u.fileOrdres[0];
         const noeud = ordreActuel ? trouverNoeudParId(ordreActuel.noeudId) : null;
         if (noeud && noeud.quantite > 0) {
           u.etatRecolte = 'versRessource';
           u.tacheActuelle = 'En route vers ' + TYPES_RESSOURCE[noeud.type].label;
         } else {
-          if (ordreActuel) u.fileOrdres.shift();
-          demarrerProchainOrdreRecolte(u);
+          const typeRessource = ordreActuel ? (ordreActuel.typeRessource || (noeud ? noeud.type : null)) : null;
+          const remplacement = typeRessource ? trouverNoeudRessourceProche(typeRessource, u.x, u.y) : null;
+          if (remplacement && ordreActuel) {
+            ordreActuel.noeudId = remplacement.id;
+            ordreActuel.typeRessource = remplacement.type;
+            u.etatRecolte = 'versRessource';
+            u.tacheActuelle = 'En route vers ' + TYPES_RESSOURCE[remplacement.type].label;
+          } else {
+            if (ordreActuel) u.fileOrdres.shift();
+            demarrerProchainOrdreRecolte(u);
+          }
         }
       }
     }
