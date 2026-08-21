@@ -205,13 +205,21 @@ function deplacerMenacesSauvages(delta) {
       if (d < meilleureDist) { meilleureDist = d; cible = j; }
     }
 
-    const cibleX = cible ? cible.x : fourmiliere.x;
-    const cibleY = cible ? cible.y : fourmiliere.y;
-    const porteeArret = cible ? def.portee : fourmiliere.rayon;
-    const d = distance(c.x, c.y, cibleX, cibleY);
-    if (d > porteeArret) {
-      const angle = Math.atan2(cibleY - c.y, cibleX - c.x);
-      const pas = Math.min(def.vitesse * delta, d - porteeArret + 1);
+    // Correction : une menace sauvage sans cible détectée à proximité
+    // reste sur place au lieu de foncer par défaut sur la fourmilière.
+    // Avant ce correctif, les 6 menaces générées en partie libre
+    // (et celles des missions) chargeaient toutes le nid dès la
+    // première image de jeu — avant même que le joueur ait eu le
+    // temps de produire la moindre unité —, ce qui rendait la partie
+    // quasiment injouable. Une menace "sauvage" doit rester neutre
+    // tant qu'elle n'est pas provoquée par une unité du joueur qui
+    // s'approche.
+    if (!cible) continue;
+
+    const d = distance(c.x, c.y, cible.x, cible.y);
+    if (d > def.portee) {
+      const angle = Math.atan2(cible.y - c.y, cible.x - c.x);
+      const pas = Math.min(def.vitesse * delta, d - def.portee + 1);
       c.x += Math.cos(angle) * pas;
       c.y += Math.sin(angle) * pas;
     }
