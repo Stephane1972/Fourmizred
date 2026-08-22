@@ -194,9 +194,11 @@ function dessinerBatimentProduction(ctx, b) {
   degrade.addColorStop(0, ajusterCouleur(def.couleur, 30));
   degrade.addColorStop(1, def.couleur);
   ctx.fillStyle = degrade;
+  activerOmbrePortee(11, 4);
   ctx.beginPath();
   ctx.ellipse(b.x, b.y, def.rayon, def.rayon * 0.78, 0, 0, Math.PI * 2);
   ctx.fill();
+  desactiverOmbrePortee();
   ctx.strokeStyle = '#1a120a';
   ctx.lineWidth = 2.5 / etat.camera.zoom;
   ctx.stroke();

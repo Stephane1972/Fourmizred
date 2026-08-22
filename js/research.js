@@ -264,9 +264,11 @@ function dessinerLaboratoire(ctx, b) {
   degrade.addColorStop(0, ajusterCouleur(def.couleur, 30));
   degrade.addColorStop(1, def.couleur);
   ctx.fillStyle = degrade;
+  activerOmbrePortee(10, 3);
   ctx.beginPath();
   ctx.ellipse(b.x, b.y, 34, 26, 0, 0, Math.PI * 2);
   ctx.fill();
+  desactiverOmbrePortee();
   ctx.strokeStyle = '#1a120a';
   ctx.lineWidth = 2 / etat.camera.zoom;
   ctx.stroke();

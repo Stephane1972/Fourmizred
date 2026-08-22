@@ -8,6 +8,76 @@
 // ===========================================================
 
 // ---------------------------------------------------------
+// OMBRE PORTÉE PARTAGÉE — petit helper réutilisé par tous les
+// dessinateurs de structures (fourmilière ci-dessous, mais aussi
+// buildings.js, defenses.js, research.js, resources.js, colonies.js,
+// combat.js → nid ennemi) pour un rendu cohérent sans dupliquer les
+// mêmes 3 lignes partout.
+// ---------------------------------------------------------
+function activerOmbrePortee(blur = 12, decalageY = 4) {
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = blur / etat.camera.zoom;
+  ctx.shadowOffsetY = decalageY / etat.camera.zoom;
+}
+
+function desactiverOmbrePortee() {
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+}
+
+// ---------------------------------------------------------
+// ÉCLATS DE COMBAT — petit flash lumineux à l'impact de chaque coup
+// porté (voir combat.js → infligerDegats), en plus des textes
+// flottants de dégâts. Volontairement bref et discret pour rester
+// lisible même avec plusieurs combats simultanés.
+// ---------------------------------------------------------
+const eclatsCombat = [];
+const DUREE_ECLAT_COMBAT = 0.22;
+
+function ajouterEclatCombat(x, y, couleur) {
+  eclatsCombat.push({ x, y, couleur, age: 0 });
+}
+
+function mettreAJourEtDessinerEclatsCombat(ctx, delta) {
+  for (let i = eclatsCombat.length - 1; i >= 0; i--) {
+    const e = eclatsCombat[i];
+    e.age += delta;
+    if (e.age >= DUREE_ECLAT_COMBAT) { eclatsCombat.splice(i, 1); continue; }
+
+    const t = e.age / DUREE_ECLAT_COMBAT;
+    const rayon = (5 + t * 9) / etat.camera.zoom;
+    const degrade = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, rayon);
+    degrade.addColorStop(0, e.couleur);
+    degrade.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalAlpha = (1 - t) * 0.75;
+    ctx.fillStyle = degrade;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, rayon, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------------------------------------------------------
+// CYCLE JOUR/NUIT — voile bleuté progressif par-dessus toute la
+// scène (terrain, unités, structures compris), qui va et vient très
+// lentement pour ne jamais gêner la lisibilité du jeu (opacité
+// plafonnée à 0.4 en pleine "nuit"). Purement décoratif : aucune
+// unité ne se comporte différemment selon l'heure.
+// ---------------------------------------------------------
+const DUREE_CYCLE_JOUR = 300; // secondes pour un cycle jour → nuit → jour complet
+
+function dessinerEclairageJourNuit(temps) {
+  // 0 = nuit profonde, 1 = plein midi
+  const cycle = (Math.sin((temps.total / DUREE_CYCLE_JOUR) * Math.PI * 2 - Math.PI / 2) + 1) / 2;
+  const opaciteNuit = (1 - cycle) * 0.4;
+  if (opaciteNuit <= 0.01) return;
+  ctx.fillStyle = `rgba(12,18,48,${opaciteNuit})`;
+  ctx.fillRect(0, 0, etat.carte.largeur, etat.carte.hauteur);
+}
+
+// ---------------------------------------------------------
 // TERRAIN — généré une seule fois au chargement, sur toute la carte.
 // Le rendu, lui, ne dessine que ce qui est visible (voir rendreScene).
 // ---------------------------------------------------------
@@ -132,15 +202,11 @@ function dessinerFourmiliere(ctx, temps) {
   degrade.addColorStop(0, ajusterCouleur('#3a2818', 35));
   degrade.addColorStop(1, '#3a2818');
   ctx.fillStyle = degrade;
-  ctx.shadowColor = 'rgba(0,0,0,0.45)';
-  ctx.shadowBlur = 14 / etat.camera.zoom;
-  ctx.shadowOffsetY = 5 / etat.camera.zoom;
+  activerOmbrePortee(14, 5);
   ctx.beginPath();
   ctx.ellipse(x, y, rayon + respiration, (rayon + respiration) * 0.78, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
+  desactiverOmbrePortee();
   ctx.strokeStyle = '#241a10';
   ctx.lineWidth = 3 / etat.camera.zoom;
   ctx.stroke();
@@ -323,8 +389,10 @@ function rendreScene(temps) {
   dessinerBasesSecondaires(ctx);
   dessinerUnites(ctx, temps);
   dessinerEffetsSuperarme(ctx, temps.delta);
+  mettreAJourEtDessinerEclatsCombat(ctx, temps.delta);
   mettreAJourEtDessinerTextesFlottants(ctx, temps.delta);
   mettreAJourEtDessinerRetoursTactiles(ctx, temps.delta);
+  dessinerEclairageJourNuit(temps);
 
   ctx.restore();
 

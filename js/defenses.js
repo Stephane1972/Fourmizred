@@ -204,13 +204,16 @@ function dessinerDefense(ctx, b) {
   ctx.fillStyle = def.couleur;
   ctx.strokeStyle = '#1a120a';
   ctx.lineWidth = 2 / etat.camera.zoom;
+  activerOmbrePortee(9, 3);
   if (estMur) {
     ctx.fillRect(b.x - 18, b.y - 10, 36, 20);
+    desactiverOmbrePortee();
     ctx.strokeRect(b.x - 18, b.y - 10, 36, 20);
   } else {
     ctx.beginPath();
     ctx.ellipse(b.x, b.y, 15, 15, 0, 0, Math.PI * 2);
     ctx.fill();
+    desactiverOmbrePortee();
     ctx.stroke();
     // Petit canon indiquant que la structure attaque automatiquement
     if (def.attaque) {

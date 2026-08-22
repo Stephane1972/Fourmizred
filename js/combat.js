@@ -24,6 +24,7 @@ function ordonnerAttaque(unite, cibleId) {
 function infligerDegats(cible, degats, attaquant) {
   cible.pv = Math.max(0, cible.pv - degats);
   if (attaquant) cible.dernierAttaquantId = attaquant.id;
+  ajouterEclatCombat(cible.x, cible.y, '#ffcf6a');
 }
 
 // ---------------------------------------------------------
@@ -239,9 +240,11 @@ function dessinerNidEnnemi(ctx) {
   degrade.addColorStop(0, ajusterCouleur(capturee ? '#1a3a1a' : '#3a1414', 30));
   degrade.addColorStop(1, capturee ? '#1a3a1a' : '#3a1414');
   ctx.fillStyle = degrade;
+  activerOmbrePortee(12, 4);
   ctx.beginPath();
   ctx.ellipse(x, y, rayon, rayon * 0.78, 0, 0, Math.PI * 2);
   ctx.fill();
+  desactiverOmbrePortee();
   ctx.strokeStyle = '#1a0808';
   ctx.lineWidth = 3 / etat.camera.zoom;
   ctx.stroke();

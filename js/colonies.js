@@ -150,9 +150,11 @@ function dessinerBaseSecondaire(ctx, b) {
   degrade.addColorStop(0, ajusterCouleur('#4a3018', 30));
   degrade.addColorStop(1, '#4a3018');
   ctx.fillStyle = degrade;
+  activerOmbrePortee(12, 4);
   ctx.beginPath();
   ctx.ellipse(b.x, b.y, b.rayon, b.rayon * 0.78, 0, 0, Math.PI * 2);
   ctx.fill();
+  desactiverOmbrePortee();
   ctx.strokeStyle = '#241a10';
   ctx.lineWidth = 2.5 / etat.camera.zoom;
   ctx.stroke();

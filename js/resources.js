@@ -297,6 +297,17 @@ function dessinerNoeudRessource(ctx, noeud) {
   const def = TYPES_RESSOURCE[noeud.type];
   const echelle = (0.4 + 0.6 * (noeud.quantite / noeud.quantiteInitiale)) * noeud.variationTaille;
 
+  // Ombre au sol — une simple ellipse sombre semi-transparente plutôt
+  // qu'un flou de canevas (ctx.shadowBlur) : avec potentiellement des
+  // dizaines de nœuds visibles à l'écran, cette version reste bon
+  // marché tout en donnant le même effet de profondeur.
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.ellipse(noeud.x + 2 * echelle, noeud.y + 4 * echelle, 15 * echelle, 6 * echelle, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
   if (noeud.type === 'eau') {
     ctx.fillStyle = def.couleurAccent;
     ctx.beginPath();
