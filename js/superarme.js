@@ -32,6 +32,7 @@ function activerCiblageSuperarme() {
   modeCiblageSuperarme = true;
   modePlacementDefense = null;
   modePlacementLaboratoire = null;
+  modePlacementBatimentProduction = null;
   modeCiblageFondation = false;
 }
 

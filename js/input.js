@@ -66,6 +66,9 @@ function initialiserInput() {
       } else if (modePlacementLaboratoire) {
         placerLaboratoire(modePlacementLaboratoire, point.x, point.y);
         modePlacementLaboratoire = null;
+      } else if (modePlacementBatimentProduction) {
+        placerBatimentProduction(modePlacementBatimentProduction, point.x, point.y);
+        modePlacementBatimentProduction = null;
       } else if (modeCiblageFondation) {
         ordonnerFondationPourSelection(point.x, point.y);
         modeCiblageFondation = false;

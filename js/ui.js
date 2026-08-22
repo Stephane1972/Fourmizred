@@ -39,6 +39,7 @@ const elBanniereTexte = document.getElementById('banniere-placement-texte');
 document.getElementById('banniere-placement-annuler').addEventListener('click', () => {
   modePlacementDefense = null;
   modePlacementLaboratoire = null;
+  modePlacementBatimentProduction = null;
   modeCiblageFondation = false;
   modeCiblageSuperarme = false;
 });
@@ -71,9 +72,11 @@ function rafraichirBarreRessources() {
 }
 
 function rafraichirBanniereModePlacement() {
-  const type = modePlacementDefense || modePlacementLaboratoire;
+  const type = modePlacementDefense || modePlacementLaboratoire || modePlacementBatimentProduction;
   if (type) {
-    const label = modePlacementDefense ? TYPES_DEFENSE[type].label : TYPES_LABORATOIRE[type].label;
+    const label = modePlacementDefense
+      ? TYPES_DEFENSE[type].label
+      : (modePlacementLaboratoire ? TYPES_LABORATOIRE[type].label : TYPES_BATIMENT_PRODUCTION[type].label);
     elBanniereTexte.textContent = `Touchez la carte pour construire : ${label}`;
     elBanniere.classList.remove('masque');
     return;
@@ -187,10 +190,42 @@ function construirePanneauConstruction() {
     </button>`;
   }
   html += '</div>';
+
+  // Bâtiments de production constructibles (buildings.js) — distincts
+  // des défenses ci-dessus : ils débloquent des unités plutôt que de
+  // défendre le territoire. Un seul exemplaire à la fois pour l'instant
+  // (chambreSpecialistes), déjà construit ou en cours = pas re-proposé.
+  const batimentsAConstruire = Object.entries(TYPES_BATIMENT_PRODUCTION).filter(([, def]) => def.cout);
+  if (batimentsAConstruire.length > 0) {
+    html += '<div class="sous-titre">Bâtiments de production</div><div class="grille">';
+    for (const [type, def] of batimentsAConstruire) {
+      const existant = trouverBatiment(type);
+      if (existant) {
+        html += `<button class="carte desactive">
+          <span class="titre">${def.label}</span>
+          <span class="detail">${existant.enConstruction ? 'En construction…' : 'Déjà construit'}</span>
+        </button>`;
+        continue;
+      }
+      const desactive = !peutPayer(def.cout);
+      html += `<button class="carte ${desactive ? 'desactive' : ''}" data-batiment-production="${type}">
+        <span class="titre">${def.label}</span>
+        <span class="detail">${formaterCout(def.cout)}</span>
+      </button>`;
+    }
+    html += '</div>';
+  }
+
   elPanneauMenu.innerHTML = html;
   elPanneauMenu.querySelectorAll('button[data-defense]').forEach((bouton) => {
     bouton.addEventListener('click', () => {
       activerPlacementDefense(bouton.dataset.defense);
+      fermerPanneau();
+    });
+  });
+  elPanneauMenu.querySelectorAll('button[data-batiment-production]').forEach((bouton) => {
+    bouton.addEventListener('click', () => {
+      activerPlacementBatimentProduction(bouton.dataset.batimentProduction);
       fermerPanneau();
     });
   });

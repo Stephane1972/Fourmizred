@@ -155,6 +155,9 @@ function activerPlacementLaboratoire(type) {
   modePlacementLaboratoire = modePlacementLaboratoire === type ? null : type;
   if (modePlacementLaboratoire) {
     modePlacementDefense = null; // les deux modes de placement sont mutuellement exclusifs
+    modePlacementBatimentProduction = null;
+    modeCiblageFondation = false;
+    modeCiblageSuperarme = false;
     console.log(`Mode placement : ${TYPES_LABORATOIRE[type].label} — touchez la carte pour le construire.`);
   }
 }

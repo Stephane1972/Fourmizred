@@ -36,6 +36,7 @@ function activerCiblageFondation() {
   modeCiblageFondation = true;
   modePlacementDefense = null;
   modePlacementLaboratoire = null;
+  modePlacementBatimentProduction = null;
   modeCiblageSuperarme = false;
 }
 
