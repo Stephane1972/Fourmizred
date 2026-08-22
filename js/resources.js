@@ -292,7 +292,7 @@ function mettreAJourRecolte(delta) {
   }
 }
 
-function dessinerNoeudRessource(ctx, noeud) {
+function dessinerNoeudRessource(ctx, noeud, temps) {
   if (noeud.quantite <= 0) return;
   const def = TYPES_RESSOURCE[noeud.type];
   const echelle = (0.4 + 0.6 * (noeud.quantite / noeud.quantiteInitiale)) * noeud.variationTaille;
@@ -317,11 +317,27 @@ function dessinerNoeudRessource(ctx, noeud) {
     ctx.beginPath();
     ctx.ellipse(noeud.x, noeud.y, 18 * echelle, 12 * echelle, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Reflet
+    // Reflet principal
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.beginPath();
     ctx.ellipse(noeud.x - 5 * echelle, noeud.y - 4 * echelle, 5 * echelle, 2.5 * echelle, 0, 0, Math.PI * 2);
     ctx.fill();
+    // Scintillement animé — 2 petits reflets qui glissent doucement
+    // sur la surface pour que l'eau ne soit jamais parfaitement figée.
+    if (temps) {
+      const t = temps.total;
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      const sx1 = noeud.x + Math.cos(t * 0.6 + noeud.angleVariation) * 9 * echelle;
+      const sy1 = noeud.y + Math.sin(t * 0.6 + noeud.angleVariation) * 5 * echelle;
+      ctx.beginPath();
+      ctx.ellipse(sx1, sy1, 1.6 * echelle, 0.9 * echelle, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const sx2 = noeud.x + Math.cos(t * -0.45 + noeud.angleVariation + 2) * 11 * echelle;
+      const sy2 = noeud.y + Math.sin(t * -0.45 + noeud.angleVariation + 2) * 6 * echelle;
+      ctx.beginPath();
+      ctx.ellipse(sx2, sy2, 1.1 * echelle, 0.7 * echelle, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     return;
   }
 

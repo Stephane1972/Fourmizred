@@ -378,7 +378,7 @@ function rendreScene(temps) {
 
   for (const noeud of noeudsRessource) {
     if (noeud.x < zone.x1 || noeud.x > zone.x2 || noeud.y < zone.y1 || noeud.y > zone.y2) continue;
-    dessinerNoeudRessource(ctx, noeud);
+    dessinerNoeudRessource(ctx, noeud, temps);
   }
 
   dessinerBatimentsProduction(ctx);

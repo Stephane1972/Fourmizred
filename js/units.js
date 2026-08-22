@@ -469,13 +469,18 @@ function dessinerUnite(ctx, u, temps) {
   const def = TYPES_UNITE[u.type];
   if (!def) return;
 
-  // Anneau de sélection, au sol, ne suit pas l'animation de repos
+  // Anneau de sélection, au sol, ne suit pas l'animation de repos —
+  // légère pulsation (rayon + opacité) pour rester bien visible sans
+  // être statique, cohérent avec le reste des retouches d'ambiance.
   if (u.selectionnee) {
+    const pulsation = Math.sin(temps.total * 3.2) * 0.5 + 0.5;
     ctx.strokeStyle = '#3ae03a';
-    ctx.lineWidth = 1.5 / etat.camera.zoom;
+    ctx.globalAlpha = 0.7 + pulsation * 0.3;
+    ctx.lineWidth = (1.5 + pulsation * 0.6) / etat.camera.zoom;
     ctx.beginPath();
-    ctx.ellipse(u.x, u.y, 12, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(u.x, u.y, 12 + pulsation, 8 + pulsation * 0.6, 0, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = 1;
 
     // Tâche actuelle — affichée seulement pour l'unité sélectionnée,
     // pour ne pas encombrer l'écran quand plusieurs unités sont visibles.
@@ -499,14 +504,18 @@ function dessinerUnite(ctx, u, temps) {
 
   // Anneau rouge sur toute unité actuellement désignée comme cible
   // par un ordre d'attaque d'une unité alliée — rend la "sélection
-  // d'une cible" visible, pas seulement effective en interne.
+  // d'une cible" visible, pas seulement effective en interne. Même
+  // traitement de pulsation, en rouge, pour signaler l'urgence.
   const estCiblee = etat.unites.some((a) => a.faction === 'joueur' && a.ordre === 'attaquer' && a.cibleId === u.id);
   if (estCiblee) {
+    const pulsation = Math.sin(temps.total * 5) * 0.5 + 0.5;
     ctx.strokeStyle = '#e0503c';
-    ctx.lineWidth = 1.5 / etat.camera.zoom;
+    ctx.globalAlpha = 0.75 + pulsation * 0.25;
+    ctx.lineWidth = (1.5 + pulsation * 0.7) / etat.camera.zoom;
     ctx.beginPath();
-    ctx.ellipse(u.x, u.y, 13, 9, 0, 0, Math.PI * 2);
+    ctx.ellipse(u.x, u.y, 13 + pulsation, 9 + pulsation * 0.6, 0, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   const respiration = Math.sin(temps.total * 2 + u.phaseIdle) * 1.4;
