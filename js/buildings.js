@@ -40,7 +40,7 @@ const TYPES_BATIMENT_PRODUCTION = {
   // fourmiChimiste, fourmiPiege, fourmiExplosive, reineGuerriere).
   chambreSpecialistes: {
     label: 'Chambre des spécialistes',
-    unitesProduisibles: ['fourmiTisserande', 'fourmiChimiste', 'fourmiPiege', 'fourmiExplosive', 'reineGuerriere'],
+    unitesProduisibles: ['fourmiTisserande', 'fourmiChimiste', 'fourmiPiege', 'fourmiExplosive', 'reineGuerriere', 'ouvriereInfiltratrice', 'fourmiCamouflee'],
     rayon: 44,
     couleur: '#4a2a5a',
     cout: { materiaux: 250, nourriture: 150 },

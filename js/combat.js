@@ -62,11 +62,31 @@ function ajouterExperience(attaquant) {
 }
 
 // ---------------------------------------------------------
+// CAMOUFLAGE — une unité dont le type porte `camouflage: true`
+// (fourmiCamouflee, units.js) est invisible aux yeux d'un adversaire
+// qui n'a pas la capacité `detecteur: true` (araignée/scarabée pour
+// l'instant), sauf pendant les quelques secondes qui suivent sa
+// propre attaque : agir la révèle temporairement, façon "stealth"
+// classique de Command & Conquer.
+// ---------------------------------------------------------
+const DUREE_REVELATION_CAMOUFLAGE = 4; // secondes de visibilité forcée après avoir attaqué
+
+function estCamouflee(u) { return !!TYPES_UNITE[u.type].camouflage; }
+function estDetecteur(u) { return !!TYPES_UNITE[u.type].detecteur; }
+
+function estIndetectablePar(cible, observateur) {
+  if (!estCamouflee(cible)) return false;
+  if (estDetecteur(observateur)) return false;
+  return cible.tempsDepuisAttaque >= DUREE_REVELATION_CAMOUFLAGE;
+}
+
+// ---------------------------------------------------------
 // MISE À JOUR — appelée depuis la boucle de jeu (main.js)
 // ---------------------------------------------------------
 function mettreAJourCombat(delta) {
   deplacerUnitesEnAttaque(delta);
   deplacerMenacesSauvages(delta);
+  deplacerInfiltratrices(delta);
   refroidirCooldowns(delta);
   resoudreCombats();
   resoudreAttaquesFourmiliere();
@@ -102,13 +122,21 @@ function deplacerUnitesEnAttaque(delta) {
 function refroidirCooldowns(delta) {
   for (const u of etat.unites) {
     if (u.cooldownAttaque > 0) u.cooldownAttaque -= delta;
+    // Alimente la fenêtre de révélation du camouflage (voir plus haut) —
+    // incrémenté pour toutes les unités, mais seul TYPES_UNITE[u.type].camouflage
+    // en tient compte ailleurs ; aucun coût à le tenir à jour pour les autres.
+    u.tempsDepuisAttaque = (u.tempsDepuisAttaque || 0) + delta;
   }
 }
 
 // Toute paire (unité joueur, unité ennemie) mutuellement à portée
 // échange des dégâts, chacune selon sa propre cadence. C'est la
 // seule fonction qui applique des dégâts — et elle ne forme jamais
-// de paire entre deux unités de la même faction.
+// de paire entre deux unités de la même faction. Une unité camouflée
+// non détectée par l'autre (voir estIndetectablePar) ne peut ni être
+// visée, ni initier elle-même une attaque : ce n'est qu'au moment où
+// ELLE frappe que le camouflage tombe (voir la mise à jour de
+// tempsDepuisAttaque ci-dessous).
 function resoudreCombats() {
   const joueurs = etat.unites.filter((u) => u.faction === 'joueur' && u.pv > 0);
   const ennemis = etat.unites.filter((u) => u.faction === 'ennemi' && u.pv > 0);
@@ -120,13 +148,15 @@ function resoudreCombats() {
       const defE = TYPES_UNITE[e.type];
       const d = distance(j.x, j.y, e.x, e.y);
 
-      if (d <= defJ.portee && j.cooldownAttaque <= 0) {
+      if (d <= defJ.portee && j.cooldownAttaque <= 0 && !estIndetectablePar(e, j)) {
         infligerDegats(e, degatsEffectifs(j), j);
         j.cooldownAttaque = defJ.cadenceAttaque;
+        if (estCamouflee(j)) j.tempsDepuisAttaque = 0;
       }
-      if (e.pv > 0 && d <= defE.portee && e.cooldownAttaque <= 0) {
+      if (e.pv > 0 && d <= defE.portee && e.cooldownAttaque <= 0 && !estIndetectablePar(j, e)) {
         infligerDegats(j, degatsEffectifs(e), e);
         e.cooldownAttaque = defE.cadenceAttaque;
+        if (estCamouflee(e)) e.tempsDepuisAttaque = 0;
       }
     }
   }
@@ -162,12 +192,25 @@ function nettoyerUnitesMortes() {
 // ---------------------------------------------------------
 // COLONIE RIVALE — premier ennemi présent sur la carte. Uniquement
 // des types déjà existants (pas d'unité rare/spéciale à ce stade).
+// `capturee` (voir infiltration.js) : une fois vraie, la colonie
+// rivale change de camp visuellement et la partie est gagnée — mais
+// l'objet lui-même n'est jamais recréé, juste réinitialisé à chaque
+// nouvelle partie (voir genererColonieEnnemie).
 // ---------------------------------------------------------
-const nidEnnemi = { x: 0, y: 0, rayon: 60 };
+const nidEnnemi = { x: 0, y: 0, rayon: 60, capturee: false };
 
-function genererColonieEnnemie() {
+// Position déterministe (dépend uniquement de fourmiliere, toujours
+// fixée au centre de la carte) — factorisée pour pouvoir être
+// réappliquée après le chargement d'une sauvegarde (storage.js),
+// puisque cette position elle-même n'a pas besoin d'être persistée.
+function positionnerNidEnnemi() {
   nidEnnemi.x = clamp(fourmiliere.x + 1400, 250, etat.carte.largeur - 250);
   nidEnnemi.y = clamp(fourmiliere.y + 900, 250, etat.carte.hauteur - 250);
+}
+
+function genererColonieEnnemie() {
+  positionnerNidEnnemi();
+  nidEnnemi.capturee = false;
 
   const composition = ['fourmiRouge', 'fourmiRouge', 'fourmiRouge', 'ouvriere', 'ouvriere'];
   composition.forEach((type, i) => {
@@ -182,18 +225,18 @@ function genererColonieEnnemie() {
 }
 
 function dessinerNidEnnemi(ctx) {
-  const { x, y, rayon } = nidEnnemi;
+  const { x, y, rayon, capturee } = nidEnnemi;
 
   ctx.globalAlpha = 0.3;
-  ctx.fillStyle = '#5a2020';
+  ctx.fillStyle = capturee ? '#20401a' : '#5a2020';
   ctx.beginPath();
   ctx.ellipse(x, y, rayon * 1.5, rayon * 1.15, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 
   const degrade = ctx.createRadialGradient(x - 12, y - 10, 4, x, y, rayon);
-  degrade.addColorStop(0, ajusterCouleur('#3a1414', 30));
-  degrade.addColorStop(1, '#3a1414');
+  degrade.addColorStop(0, ajusterCouleur(capturee ? '#1a3a1a' : '#3a1414', 30));
+  degrade.addColorStop(1, capturee ? '#1a3a1a' : '#3a1414');
   ctx.fillStyle = degrade;
   ctx.beginPath();
   ctx.ellipse(x, y, rayon, rayon * 0.78, 0, 0, Math.PI * 2);
@@ -202,10 +245,10 @@ function dessinerNidEnnemi(ctx) {
   ctx.lineWidth = 3 / etat.camera.zoom;
   ctx.stroke();
 
-  ctx.fillStyle = '#f0c0c0';
+  ctx.fillStyle = capturee ? '#c0f0c0' : '#f0c0c0';
   ctx.font = `${14 / etat.camera.zoom}px Arial`;
   ctx.textAlign = 'center';
-  ctx.fillText('Colonie rivale', x, y - rayon - 14 / etat.camera.zoom);
+  ctx.fillText(capturee ? 'Nid conquis' : 'Colonie rivale', x, y - rayon - 14 / etat.camera.zoom);
 }
 
 // ---------------------------------------------------------

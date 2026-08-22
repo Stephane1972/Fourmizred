@@ -85,7 +85,12 @@ function construireInstantane() {
     // (superarme.js) — le déblocage de cette dernière, lui, vit déjà
     // dans `technologies` ci-dessus, pas besoin de le dupliquer ici.
     basesSecondaires: etat.basesSecondaires,
-    superarmeCooldown: etat.superarme.cooldownRestant
+    superarmeCooldown: etat.superarme.cooldownRestant,
+    // Capture de la colonie rivale (infiltration.js) — sa position,
+    // elle, n'a pas besoin d'être sauvegardée : positionnerNidEnnemi()
+    // (combat.js) la recalcule de façon déterministe au chargement,
+    // voir demarrerPartie ci-dessous.
+    nidEnnemiCapturee: nidEnnemi.capturee
   };
 }
 
@@ -121,6 +126,7 @@ function appliquerInstantane(instantane) {
   etat.basesSecondaires.length = 0;
   if (instantane.basesSecondaires) etat.basesSecondaires.push(...instantane.basesSecondaires);
   etat.superarme.cooldownRestant = instantane.superarmeCooldown || 0;
+  nidEnnemi.capturee = instantane.nidEnnemiCapturee || false;
 }
 
 // ---------------------------------------------------------
@@ -209,6 +215,12 @@ async function demarrerPartie() {
 
   if (sauvegarde) {
     appliquerInstantane(sauvegarde);
+    // La position du nid ennemi elle-même n'est pas sauvegardée (elle
+    // est entièrement déterministe à partir de fourmiliere, toujours
+    // fixe) : on la recalcule ici pour ne pas laisser nidEnnemi à sa
+    // valeur par défaut (0,0) tant que genererColonieEnnemie() — qui
+    // ne s'exécute, elle, que pour une partie neuve — n'a pas tourné.
+    positionnerNidEnnemi();
     console.log('Partie chargée depuis la sauvegarde automatique (', new Date(sauvegarde.horodatage).toLocaleString('fr-FR'), ')');
   } else {
     nouvellePartie();

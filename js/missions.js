@@ -140,8 +140,11 @@ function missionDebloquee(id) {
 // GÉNÉRATION DES ENNEMIS PROPRES À UNE MISSION
 // ---------------------------------------------------------
 function genererEnnemisMissionColonie(composition) {
-  nidEnnemi.x = clamp(fourmiliere.x + 1400, 250, etat.carte.largeur - 250);
-  nidEnnemi.y = clamp(fourmiliere.y + 900, 250, etat.carte.hauteur - 250);
+  // positionnerNidEnnemi() (combat.js) fixe x/y ; capturee est remis à
+  // false explicitement ici, sinon une capture d'une partie précédente
+  // resterait bloquée à `true` sur ce même objet nidEnnemi réutilisé.
+  positionnerNidEnnemi();
+  nidEnnemi.capturee = false;
   composition.forEach((type, i) => {
     const angle = (i / composition.length) * Math.PI * 2;
     etat.unites.push(creerInstanceUnite(
@@ -183,6 +186,10 @@ function demarrerMission(id) {
   genererTerrain();
   genererRessources();
   genererBatimentsProduction();
+  // Remise à zéro explicite, même pour une mission sans colonie rivale
+  // (mission.ennemis.colonie absent) : nidEnnemi est un objet unique
+  // réutilisé d'une partie à l'autre, jamais recréé.
+  nidEnnemi.capturee = false;
 
   Object.assign(etat.ressources, mission.ressourcesDepart);
 

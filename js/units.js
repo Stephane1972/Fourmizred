@@ -78,9 +78,9 @@ const TYPES_UNITE = {
   // Chacune ajoute un champ `faiblesse` (nouveau) et `batimentRequis`
   // (nouveau) en plus des statistiques habituelles. `batimentRequis`
   // référence soit un bâtiment déjà construit (caserne, nurserie,
-  // ecoleEclaireuses), soit "chambreSpecialistes" — un bâtiment prévu
-  // au plan d'origine mais pas encore construit à ce stade : ces
-  // unités-là sont donc définies mais pas encore productibles.
+  // ecoleEclaireuses), soit "chambreSpecialistes" — désormais
+  // constructible par le joueur (voir buildings.js), ce qui rend ces
+  // unités réellement productibles une fois le bâtiment achevé.
   // ---------------------------------------------------------
 
   // --- Niveau 3 ---
@@ -262,10 +262,49 @@ const TYPES_UNITE = {
     tailleMultiplicateur: 1.2
   },
 
+  // --- Infiltration / guerre spéciale (voir infiltration.js et le
+  // mécanisme de camouflage dans combat.js) ---
+  ouvriereInfiltratrice: {
+    label: 'Ouvrière infiltratrice',
+    cout: { nourriture: 120, materiaux: 60 },
+    tempsProduction: 22,
+    pv: 70,
+    vitesse: 55,
+    degats: 0,
+    portee: 0,
+    cadenceAttaque: 1,
+    capaciteTransport: 0,
+    capacite: 'Capture instantanément la colonie rivale en l\'atteignant (façon "ingénieur")',
+    faiblesse: 'Ne combat jamais ; ne survit à aucune attaque ennemie pendant le trajet',
+    batimentRequis: 'chambreSpecialistes',
+    couleur: '#2a6a5a',
+    tailleMultiplicateur: 0.95
+  },
+  fourmiCamouflee: {
+    label: 'Fourmi camouflée',
+    cout: { nourriture: 90, materiaux: 140 },
+    tempsProduction: 26,
+    pv: 60,
+    vitesse: 50,
+    degats: 16,
+    portee: 90,
+    cadenceAttaque: 1.3,
+    capaciteTransport: 0,
+    camouflage: true,
+    capacite: 'Invisible aux fourmis ennemies ordinaires tant qu\'elle n\'a pas attaqué depuis quelques secondes ; les araignées/scarabées et tout futur détecteur la voient toujours',
+    faiblesse: 'Redevient visible et vulnérable pendant quelques secondes après chaque attaque',
+    batimentRequis: 'chambreSpecialistes',
+    couleur: '#4a4a6a',
+    tailleMultiplicateur: 0.9
+  },
+
   // Menaces sauvages — ne sont produites par aucun bâtiment, seulement
   // posées sur la carte au démarrage (voir combat.js). Ne recherchent
   // pas activement à s'entretuer avec la colonie rivale : elles n'en
-  // veulent qu'à vos unités et à votre fourmilière.
+  // veulent qu'à vos unités et à votre fourmilière. `detecteur: true`
+  // signifie qu'elles perçoivent une unité camouflée (fourmiCamouflee)
+  // comme n'importe quelle autre — leurs sens de prédateur ignorent le
+  // camouflage qui trompe les fourmis ennemies ordinaires.
   araignee: {
     label: 'Araignée',
     cout: {},
@@ -276,6 +315,7 @@ const TYPES_UNITE = {
     portee: 20,
     cadenceAttaque: 1.3,
     capaciteTransport: 0,
+    detecteur: true,
     capacite: 'Morsure venimeuse redoutable, attaque quiconque approche',
     couleur: '#3a1f4a',
     tailleMultiplicateur: 1.8
@@ -290,6 +330,7 @@ const TYPES_UNITE = {
     portee: 16,
     cadenceAttaque: 1.0,
     capaciteTransport: 0,
+    detecteur: true,
     capacite: 'Carapace résistante, fonce droit sur ses cibles',
     couleur: '#2a3a1a',
     tailleMultiplicateur: 1.4
@@ -363,7 +404,11 @@ function creerInstanceUnite(typeUnite, x, y, faction) {
     // rang gagné au combat, PV et dégâts bonus qui vont avec.
     rang: 0,
     experience: 0,
-    dernierAttaquantId: null
+    dernierAttaquantId: null,
+    // Camouflage (voir combat.js → estIndetectablePar) — grand au
+    // départ pour qu'une unité fraîchement créée soit bien "invisible
+    // depuis longtemps" plutôt que considérée comme venant d'attaquer.
+    tempsDepuisAttaque: 999
   };
 }
 
@@ -474,6 +519,14 @@ function dessinerUnite(ctx, u, temps) {
   // pattes et antennes ci-dessous sont donc dessinées dans le repère
   // local "vers l'avant = +x", quelle que soit la direction réelle.
   ctx.rotate(u.angleDeplacement || 0);
+
+  // Camouflage (combat.js) : semi-transparente tant qu'elle n'a pas
+  // attaqué récemment — redevient pleinement opaque le temps qu'elle
+  // est "révélée" après une attaque, pour que le joueur voie
+  // clairement la fenêtre de vulnérabilité.
+  if (def.camouflage && u.tempsDepuisAttaque >= DUREE_REVELATION_CAMOUFLAGE) {
+    ctx.globalAlpha = 0.5;
+  }
 
   // Ombre (dessinée hors rotation le temps de son propre calcul pour
   // rester au sol, donc on la remet en coordonnées non tournées)

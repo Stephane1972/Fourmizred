@@ -78,6 +78,7 @@ function initialiserInput() {
       } else {
         const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
         const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
+        const cibleNidEnnemi = !uniteAlliee && !uniteEnnemie && trouverNidEnnemiSous(point.x, point.y);
 
         if (uniteAlliee) {
           // Sélectionne uniquement cette unité (remplace la sélection précédente)
@@ -88,6 +89,18 @@ function initialiserInput() {
           // l'ordre d'attaquer la cible touchée.
           const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
           for (const u of selectionnees) ordonnerAttaque(u, uniteEnnemie.id);
+        } else if (cibleNidEnnemi) {
+          // Une infiltratrice sélectionnée s'y rend pour capturer la
+          // colonie rivale (infiltration.js) ; sans ça, on prévient le
+          // joueur plutôt que de ne rien faire silencieusement.
+          const infiltratrices = etat.unites.filter((u) =>
+            u.faction === 'joueur' && u.type === 'ouvriereInfiltratrice' && u.pv > 0 && u.selectionnee
+          );
+          if (infiltratrices.length > 0) {
+            for (const u of infiltratrices) ordonnerInfiltration(u);
+          } else {
+            ajouterTexteFlottant(nidEnnemi.x, nidEnnemi.y - nidEnnemi.rayon - 10, 'Nécessite une ouvrière infiltratrice', '#e0503c');
+          }
         } else {
           const defense = trouverDefenseSous(point.x, point.y);
           const noeud = !defense ? trouverNoeudSous(point.x, point.y) : null;
