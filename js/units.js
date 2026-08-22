@@ -244,6 +244,24 @@ const TYPES_UNITE = {
     tailleMultiplicateur: 1.9
   },
 
+  // --- Fondation de colonie (voir colonies.js) ---
+  jeuneReine: {
+    label: 'Jeune reine',
+    cout: { nourriture: 150, materiaux: 80 },
+    tempsProduction: 40,
+    pv: 120,
+    vitesse: 30,
+    degats: 0,
+    portee: 0,
+    cadenceAttaque: 1,
+    capaciteTransport: 0,
+    capacite: 'Peut voyager jusqu\'à un site choisi et s\'y déployer pour fonder un second nid (façon "MCV")',
+    faiblesse: 'Ne combat pas du tout ; entièrement dépendante d\'une escorte pendant son trajet',
+    batimentRequis: 'nurserie',
+    couleur: '#7a3a6a',
+    tailleMultiplicateur: 1.2
+  },
+
   // Menaces sauvages — ne sont produites par aucun bâtiment, seulement
   // posées sur la carte au démarrage (voir combat.js). Ne recherchent
   // pas activement à s'entretuer avec la colonie rivale : elles n'en
@@ -333,7 +351,19 @@ function creerInstanceUnite(typeUnite, x, y, faction) {
     enMouvement: false,
     phaseMarche: Math.random() * Math.PI * 2,
     derniereX: x,
-    derniereY: y
+    derniereY: y,
+    // Fondation de nid (voir colonies.js) — uniquement pertinent pour
+    // le type 'jeuneReine', mais posé sur toute unité pour rester
+    // cohérent avec le reste de la structure (comme fileOrdres/cargo,
+    // toujours présents même sur des unités qui ne récoltent jamais).
+    fondationCible: null,
+    etatFondation: 'idle', // idle | enRoute | construction
+    minuteurFondation: 0,
+    // Vétérance (voir combat.js → RANGS_VETERANCE, ajouterExperience) —
+    // rang gagné au combat, PV et dégâts bonus qui vont avec.
+    rang: 0,
+    experience: 0,
+    dernierAttaquantId: null
   };
 }
 
@@ -521,6 +551,16 @@ function dessinerUnite(ctx, u, temps) {
   }
 
   ctx.restore();
+
+  // Chevrons de vétérance — visibles en permanence (pas seulement à la
+  // sélection) pour repérer d'un coup d'œil les unités expérimentées
+  // en plein combat, comme dans Command & Conquer.
+  if (u.rang > 0) {
+    ctx.fillStyle = '#ffd27a';
+    ctx.font = `bold ${8 / etat.camera.zoom}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText('▲'.repeat(u.rang), u.x, u.y - 18 / etat.camera.zoom);
+  }
 
   // Barre de vie, seulement si l'unité a déjà été blessée
   if (u.pv < u.pvMax) {

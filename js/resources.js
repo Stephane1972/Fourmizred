@@ -234,10 +234,14 @@ function mettreAJourRecolte(delta) {
         u.tacheActuelle = 'Retour à la fourmilière';
       }
     } else if (u.etatRecolte === 'versNid') {
-      const d = distance(u.x, u.y, fourmiliere.x, fourmiliere.y);
-      if (d > fourmiliere.rayon) {
-        const angle = Math.atan2(fourmiliere.y - u.y, fourmiliere.x - u.x);
-        const pas = Math.min(def.vitesse * delta, d - fourmiliere.rayon + 1);
+      // Retourne au nid allié le plus proche — la fourmilière d'origine
+      // ou tout nid secondaire fondé par une jeune reine (colonies.js) —
+      // plutôt que systématiquement la fourmilière de départ.
+      const base = trouverBaseAllieeProche(u.x, u.y);
+      const d = distance(u.x, u.y, base.x, base.y);
+      if (d > base.rayon) {
+        const angle = Math.atan2(base.y - u.y, base.x - u.x);
+        const pas = Math.min(def.vitesse * delta, d - base.rayon + 1);
         u.x += Math.cos(angle) * pas;
         u.y += Math.sin(angle) * pas;
       } else {
@@ -250,7 +254,8 @@ function mettreAJourRecolte(delta) {
       if (u.minuteurRecolte <= 0) {
         if (u.cargo > 0 && u.typeCargo) {
           etat.ressources[u.typeCargo] = (etat.ressources[u.typeCargo] || 0) + u.cargo;
-          ajouterTexteFlottant(fourmiliere.x, fourmiliere.y - fourmiliere.rayon - 10, '+' + u.cargo, '#f0e0c0');
+          const baseDepot = trouverBaseAllieeProche(u.x, u.y);
+          ajouterTexteFlottant(baseDepot.x, baseDepot.y - baseDepot.rayon - 10, '+' + u.cargo, '#f0e0c0');
         }
         u.cargo = 0;
         u.typeCargo = null;

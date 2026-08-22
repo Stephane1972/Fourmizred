@@ -130,6 +130,18 @@ const ARBRE_RECHERCHE = {
     prerequis: 'stratPopulationI',
     description: '+10 population maximale supplémentaires.',
     effet: () => { etat.ressources.populationMax += 10; }
+  },
+  // Super-arme (voir superarme.js) — technologie de fin d'arbre du
+  // Centre de stratégie : aucun effet() ici, le simple fait qu'elle
+  // soit dans etat.technologies (via technologieDejaAcquise) suffit à
+  // débloquer le bouton d'activation dans le panneau Recherche (ui.js).
+  stratSuperarme: {
+    label: 'Pluie acide (super-arme)',
+    categorie: 'centreStrategie',
+    cout: { materiaux: 400, nourriture: 250 },
+    tempsRecherche: 120,
+    prerequis: 'stratPopulationII',
+    description: 'Débloque une frappe dévastatrice à zone, activable depuis le panneau Partie (long temps de recharge).'
   }
 };
 

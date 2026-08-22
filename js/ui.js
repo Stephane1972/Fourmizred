@@ -39,6 +39,8 @@ const elBanniereTexte = document.getElementById('banniere-placement-texte');
 document.getElementById('banniere-placement-annuler').addEventListener('click', () => {
   modePlacementDefense = null;
   modePlacementLaboratoire = null;
+  modeCiblageFondation = false;
+  modeCiblageSuperarme = false;
 });
 
 // -----------------------------------------------------------
@@ -70,13 +72,23 @@ function rafraichirBarreRessources() {
 
 function rafraichirBanniereModePlacement() {
   const type = modePlacementDefense || modePlacementLaboratoire;
-  if (!type) {
-    elBanniere.classList.add('masque');
+  if (type) {
+    const label = modePlacementDefense ? TYPES_DEFENSE[type].label : TYPES_LABORATOIRE[type].label;
+    elBanniereTexte.textContent = `Touchez la carte pour construire : ${label}`;
+    elBanniere.classList.remove('masque');
     return;
   }
-  const label = modePlacementDefense ? TYPES_DEFENSE[type].label : TYPES_LABORATOIRE[type].label;
-  elBanniereTexte.textContent = `Touchez la carte pour construire : ${label}`;
-  elBanniere.classList.remove('masque');
+  if (modeCiblageFondation) {
+    elBanniereTexte.textContent = 'Touchez la carte pour fonder un nouveau nid';
+    elBanniere.classList.remove('masque');
+    return;
+  }
+  if (modeCiblageSuperarme) {
+    elBanniereTexte.textContent = 'Touchez la carte pour cibler la pluie acide';
+    elBanniere.classList.remove('masque');
+    return;
+  }
+  elBanniere.classList.add('masque');
 }
 
 // -----------------------------------------------------------
@@ -226,6 +238,22 @@ function construirePanneauRecherche() {
     }
     html += '</div>';
   }
+
+  // Super-arme (superarme.js) — présentée à part, hors de la boucle
+  // par laboratoire ci-dessus : son déblocage (stratSuperarme) vient
+  // du Centre de stratégie, mais son activation est une action
+  // ponctuelle avec ciblage à la carte, pas une simple recherche de plus.
+  if (superarmeDebloquee()) {
+    const cooldown = etat.superarme.cooldownRestant;
+    const prete = cooldown <= 0;
+    html += `<div class="sous-titre">Super-arme</div><div class="grille">
+      <button class="carte ${prete ? '' : 'desactive'}" id="action-superarme">
+        <span class="titre">Pluie acide</span>
+        <span class="detail">${prete ? 'Touchez la carte pour cibler' : 'Recharge : ' + Math.ceil(cooldown) + 's'}</span>
+      </button>
+    </div>`;
+  }
+
   elPanneauMenu.innerHTML = html;
   elPanneauMenu.querySelectorAll('button[data-construire-labo]').forEach((bouton) => {
     bouton.addEventListener('click', () => {
@@ -240,6 +268,14 @@ function construirePanneauRecherche() {
       construirePanneauRecherche();
     });
   });
+  const boutonSuperarme = document.getElementById('action-superarme');
+  if (boutonSuperarme) {
+    boutonSuperarme.addEventListener('click', () => {
+      if (etat.superarme.cooldownRestant > 0) return;
+      activerCiblageSuperarme();
+      fermerPanneau();
+    });
+  }
 }
 
 // -----------------------------------------------------------
@@ -286,12 +322,21 @@ function construirePanneauMissions() {
 // sauvegarde n'est trouvée.
 // -----------------------------------------------------------
 function construirePanneauPartie() {
+  const reinesPretes = etat.unites.filter((u) =>
+    u.faction === 'joueur' && u.type === 'jeuneReine' && u.pv > 0 &&
+    u.etatFondation === 'idle' && u.selectionnee
+  ).length;
+
   elPanneauMenu.innerHTML = `
     <h2>Partie</h2>
     <div class="grille">
       <button class="carte" id="action-annuler-ordres">
         <span class="titre">Annuler les ordres</span>
         <span class="detail">Unités sélectionnées</span>
+      </button>
+      <button class="carte ${reinesPretes === 0 ? 'desactive' : ''}" id="action-fonder-nid">
+        <span class="titre">Fonder un nid</span>
+        <span class="detail">${reinesPretes > 0 ? reinesPretes + ' jeune(s) reine(s) prête(s)' : 'Sélectionnez une jeune reine'}</span>
       </button>
       <button class="carte" id="action-sauvegarder">
         <span class="titre">Sauvegarder</span>
@@ -310,6 +355,11 @@ function construirePanneauPartie() {
   document.getElementById('action-annuler-ordres').addEventListener('click', () => {
     const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
     for (const u of selectionnees) annulerOrdres(u);
+  });
+  document.getElementById('action-fonder-nid').addEventListener('click', () => {
+    if (reinesPretes === 0) return;
+    activerCiblageFondation();
+    fermerPanneau();
   });
   document.getElementById('action-sauvegarder').addEventListener('click', () => {
     sauvegarderPartie('manuel')

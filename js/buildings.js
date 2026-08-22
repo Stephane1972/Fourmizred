@@ -15,7 +15,7 @@
 const TYPES_BATIMENT_PRODUCTION = {
   nurserie: {
     label: 'Nurserie',
-    unitesProduisibles: ['ouvriere', 'nourrice'],
+    unitesProduisibles: ['ouvriere', 'nourrice', 'jeuneReine'],
     rayon: 42,
     couleur: '#5a3d2e'
   },

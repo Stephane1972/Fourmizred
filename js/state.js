@@ -41,6 +41,16 @@ const etat = {
   },
   batiments: [],
   unites: [],
+  // Nids secondaires fondés par une Jeune reine (voir colonies.js) —
+  // chacun est un point de dépôt de récolte et un objectif destructible
+  // au même titre que la fourmilière, mais sa perte ne met jamais fin
+  // à la partie (voir verifierFinDePartie, combat.js).
+  basesSecondaires: [],
+  // Super-arme "Pluie acide" (voir superarme.js), débloquée par la
+  // technologie stratSuperarme (research.js). Le seul état à
+  // persister est le temps de recharge restant : le déblocage
+  // lui-même se déduit de etat.technologies, déjà sauvegardé.
+  superarme: { cooldownRestant: 0 },
   missionActuelle: null,
   progressionMission: null, // { tempsEcoule, unitesProduites, baselineRessources }
   missionsCompletees: [],   // identifiants des missions terminées — persiste entre les sessions
@@ -62,6 +72,8 @@ function nouvellePartie() {
   etat.ressources.populationMax = 10;
   etat.batiments.length = 0;
   etat.unites.length = 0;
+  etat.basesSecondaires.length = 0;
+  etat.superarme.cooldownRestant = 0;
   etat.missionActuelle = null;
   etat.progressionMission = null;
   // etat.missionsCompletees n'est volontairement PAS réinitialisé ici :

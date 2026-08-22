@@ -229,7 +229,9 @@ function rendreScene(temps) {
   dessinerLaboratoires(ctx);
   dessinerNidEnnemi(ctx);
   dessinerFourmiliere(ctx, temps);
+  dessinerBasesSecondaires(ctx);
   dessinerUnites(ctx, temps);
+  dessinerEffetsSuperarme(ctx, temps.delta);
   mettreAJourEtDessinerTextesFlottants(ctx, temps.delta);
   mettreAJourEtDessinerRetoursTactiles(ctx, temps.delta);
 

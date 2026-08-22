@@ -66,6 +66,12 @@ function initialiserInput() {
       } else if (modePlacementLaboratoire) {
         placerLaboratoire(modePlacementLaboratoire, point.x, point.y);
         modePlacementLaboratoire = null;
+      } else if (modeCiblageFondation) {
+        ordonnerFondationPourSelection(point.x, point.y);
+        modeCiblageFondation = false;
+      } else if (modeCiblageSuperarme) {
+        declencherSuperarme(point.x, point.y);
+        modeCiblageSuperarme = false;
       } else {
         const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
         const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;

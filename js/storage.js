@@ -80,7 +80,12 @@ function construireInstantane() {
     resultatPartie: etat.resultatPartie,
     missionsCompletees: [...etat.missionsCompletees],
     progressionMission: etat.progressionMission ? { ...etat.progressionMission, baselineRessources: { ...etat.progressionMission.baselineRessources } } : null,
-    fourmilierePv: fourmiliere.pv
+    fourmilierePv: fourmiliere.pv,
+    // Nids secondaires (colonies.js) et recharge de la super-arme
+    // (superarme.js) — le déblocage de cette dernière, lui, vit déjà
+    // dans `technologies` ci-dessus, pas besoin de le dupliquer ici.
+    basesSecondaires: etat.basesSecondaires,
+    superarmeCooldown: etat.superarme.cooldownRestant
   };
 }
 
@@ -110,6 +115,12 @@ function appliquerInstantane(instantane) {
   if (instantane.missionsCompletees) etat.missionsCompletees.push(...instantane.missionsCompletees);
   etat.progressionMission = instantane.progressionMission !== undefined ? instantane.progressionMission : null;
   if (instantane.fourmilierePv !== undefined) fourmiliere.pv = instantane.fourmilierePv;
+
+  // Compatibilité avec les sauvegardes d'avant l'ajout des nids
+  // secondaires et de la super-arme : champs absents → valeurs neutres.
+  etat.basesSecondaires.length = 0;
+  if (instantane.basesSecondaires) etat.basesSecondaires.push(...instantane.basesSecondaires);
+  etat.superarme.cooldownRestant = instantane.superarmeCooldown || 0;
 }
 
 // ---------------------------------------------------------

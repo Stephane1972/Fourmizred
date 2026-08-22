@@ -16,8 +16,49 @@ function ordonnerAttaque(unite, cibleId) {
   unite.cibleId = cibleId;
 }
 
-function infligerDegats(cible, degats) {
+// `attaquant` est optionnel : quand fourni, la cible retient qui l'a
+// touchée en dernier (dernierAttaquantId), pour que nettoyerUnitesMortes()
+// sache à qui créditer l'expérience si ce coup est fatal. Les dégâts
+// qui ne viennent pas d'une unité (super-arme, voir superarme.js) ne
+// créditent personne — c'est voulu, ce ne sont pas des kills "à l'unité".
+function infligerDegats(cible, degats, attaquant) {
   cible.pv = Math.max(0, cible.pv - degats);
+  if (attaquant) cible.dernierAttaquantId = attaquant.id;
+}
+
+// ---------------------------------------------------------
+// VÉTÉRANCE — une unité qui accumule des kills gagne en rang, avec un
+// bonus permanent de dégâts et de PV (façon Command & Conquer). Le
+// bonus de PV est appliqué une fois pour toutes à la promotion (pvMax
+// est directement relevé, pv soigné du même delta) plutôt que recalculé
+// à la volée : plus simple, et cohérent avec l'affichage de la barre
+// de vie (units.js) qui compare toujours u.pv à u.pvMax directement.
+// ---------------------------------------------------------
+const RANGS_VETERANCE = [
+  { label: 'Recrue', seuilExperience: 0, bonusDegats: 1 },
+  { label: 'Vétérane', seuilExperience: 3, bonusDegats: 1.2, bonusPv: 1.15 },
+  { label: 'Élite', seuilExperience: 7, bonusDegats: 1.45, bonusPv: 1.35 }
+];
+
+function degatsEffectifs(u) {
+  const def = TYPES_UNITE[u.type];
+  const rang = RANGS_VETERANCE[u.rang || 0];
+  return Math.round(def.degats * rang.bonusDegats);
+}
+
+function ajouterExperience(attaquant) {
+  if (!attaquant || attaquant.pv <= 0) return;
+  attaquant.rang = attaquant.rang || 0;
+  attaquant.experience = (attaquant.experience || 0) + 1;
+
+  const prochain = RANGS_VETERANCE[attaquant.rang + 1];
+  if (!prochain || attaquant.experience < prochain.seuilExperience) return;
+
+  const ancienPvMax = attaquant.pvMax;
+  attaquant.rang++;
+  attaquant.pvMax = Math.round(TYPES_UNITE[attaquant.type].pv * prochain.bonusPv);
+  attaquant.pv = Math.min(attaquant.pvMax, attaquant.pv + (attaquant.pvMax - ancienPvMax));
+  ajouterTexteFlottant(attaquant.x, attaquant.y - 16, prochain.label + ' !', '#ffd27a');
 }
 
 // ---------------------------------------------------------
@@ -80,11 +121,11 @@ function resoudreCombats() {
       const d = distance(j.x, j.y, e.x, e.y);
 
       if (d <= defJ.portee && j.cooldownAttaque <= 0) {
-        infligerDegats(e, defJ.degats);
+        infligerDegats(e, degatsEffectifs(j), j);
         j.cooldownAttaque = defJ.cadenceAttaque;
       }
       if (e.pv > 0 && d <= defE.portee && e.cooldownAttaque <= 0) {
-        infligerDegats(j, defE.degats);
+        infligerDegats(j, degatsEffectifs(e), e);
         e.cooldownAttaque = defE.cadenceAttaque;
       }
     }
@@ -97,6 +138,13 @@ function nettoyerUnitesMortes() {
   for (let i = etat.unites.length - 1; i >= 0; i--) {
     const u = etat.unites[i];
     if (u.pv > 0) continue;
+
+    // Crédite l'expérience à qui a porté le coup fatal, s'il est
+    // toujours vivant (voir ajouterExperience, plus haut).
+    if (u.dernierAttaquantId) {
+      const attaquant = etat.unites.find((a) => a.id === u.dernierAttaquantId && a.pv > 0);
+      if (attaquant) ajouterExperience(attaquant);
+    }
 
     if (u.faction === 'joueur') {
       etat.ressources.population = Math.max(0, etat.ressources.population - 1);
@@ -227,18 +275,39 @@ function deplacerMenacesSauvages(delta) {
 }
 
 // ---------------------------------------------------------
-// FOURMILIÈRE DESTRUCTIBLE — toute unité ennemie à portée lui inflige
-// ses dégâts, exactement comme contre une unité (même cooldown).
+// STRUCTURES DESTRUCTIBLES — fourmilière ET nids secondaires (voir
+// colonies.js) : toute unité ennemie à portée de l'une ou l'autre lui
+// inflige ses dégâts effectifs (bonus de vétérance inclus), exactement
+// comme contre une unité (même cooldown). Un nid secondaire détruit
+// est retiré, mais — contrairement à la fourmilière — ne met jamais
+// fin à la partie (voir verifierFinDePartie).
 // ---------------------------------------------------------
 function resoudreAttaquesFourmiliere() {
-  if (fourmiliere.pv <= 0) return;
   for (const u of etat.unites) {
-    if (u.faction !== 'ennemi' || u.pv <= 0) continue;
+    if (u.faction !== 'ennemi' || u.pv <= 0 || u.cooldownAttaque > 0) continue;
     const def = TYPES_UNITE[u.type];
-    const d = distance(u.x, u.y, fourmiliere.x, fourmiliere.y);
-    if (d <= fourmiliere.rayon + 8 && u.cooldownAttaque <= 0) {
-      fourmiliere.pv = Math.max(0, fourmiliere.pv - def.degats);
+    const degats = degatsEffectifs(u);
+
+    if (fourmiliere.pv > 0 && distance(u.x, u.y, fourmiliere.x, fourmiliere.y) <= fourmiliere.rayon + 8) {
+      fourmiliere.pv = Math.max(0, fourmiliere.pv - degats);
       u.cooldownAttaque = def.cadenceAttaque;
+      continue;
+    }
+
+    for (const base of etat.basesSecondaires) {
+      if (base.pv <= 0) continue;
+      if (distance(u.x, u.y, base.x, base.y) <= base.rayon + 8) {
+        base.pv = Math.max(0, base.pv - degats);
+        u.cooldownAttaque = def.cadenceAttaque;
+        break;
+      }
+    }
+  }
+
+  for (let i = etat.basesSecondaires.length - 1; i >= 0; i--) {
+    if (etat.basesSecondaires[i].pv <= 0) {
+      ajouterTexteFlottant(etat.basesSecondaires[i].x, etat.basesSecondaires[i].y, 'Nid avancé détruit', '#e0503c');
+      etat.basesSecondaires.splice(i, 1);
     }
   }
 }
