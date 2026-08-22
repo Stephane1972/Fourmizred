@@ -14,6 +14,22 @@
 const tachesTerrain = [];
 const caillouxTerrain = [];
 const brindillesTerrain = [];
+const touffesHerbeTerrain = [];
+const fleursTerrain = [];
+// Poussière/pollen ambiants — purement décoratifs, dérivent lentement
+// sur tout l'écran (coordonnées écran, pas monde) pour donner une
+// impression d'air vivant sans rien coûter en gameplay.
+const particulesAmbiantes = [];
+for (let i = 0; i < 46; i++) {
+  particulesAmbiantes.push({
+    x: Math.random(),
+    y: Math.random(),
+    taille: 0.6 + Math.random() * 1.6,
+    derive: 4 + Math.random() * 10,
+    phase: Math.random() * Math.PI * 2,
+    opaciteBase: 0.12 + Math.random() * 0.18
+  });
+}
 
 function genererTerrain() {
   const { largeur, hauteur } = etat.carte;
@@ -57,6 +73,31 @@ function genererTerrain() {
       angle: nombreAleatoire(-0.5, 0.5)
     });
   }
+
+  // Touffes d'herbe — 3 brins courts par touffe, légèrement balancés
+  // au fil du temps (voir rendreScene) pour donner un environnement
+  // qui respire, pas juste un décor figé.
+  for (let i = 0; i < 70 * densite; i++) {
+    touffesHerbeTerrain.push({
+      x: Math.random() * largeur,
+      y: Math.random() * hauteur,
+      hauteur: 6 + Math.random() * 6,
+      couleur: Math.random() > 0.5 ? '#5c7a3a' : '#4a6830',
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+
+  // Petites fleurs sauvages — très éparses, juste assez pour égayer
+  // sans distraire du gameplay.
+  const couleursFleurs = ['#f0d8e8', '#f5e08a', '#e8e8e8'];
+  for (let i = 0; i < 16 * densite; i++) {
+    fleursTerrain.push({
+      x: Math.random() * largeur,
+      y: Math.random() * hauteur,
+      rayon: 2 + Math.random() * 1.5,
+      couleur: couleursFleurs[Math.floor(Math.random() * couleursFleurs.length)]
+    });
+  }
 }
 
 // ---------------------------------------------------------
@@ -91,9 +132,15 @@ function dessinerFourmiliere(ctx, temps) {
   degrade.addColorStop(0, ajusterCouleur('#3a2818', 35));
   degrade.addColorStop(1, '#3a2818');
   ctx.fillStyle = degrade;
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 14 / etat.camera.zoom;
+  ctx.shadowOffsetY = 5 / etat.camera.zoom;
   ctx.beginPath();
   ctx.ellipse(x, y, rayon + respiration, (rayon + respiration) * 0.78, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
   ctx.strokeStyle = '#241a10';
   ctx.lineWidth = 3 / etat.camera.zoom;
   ctx.stroke();
@@ -178,8 +225,18 @@ function rendreScene(temps) {
   ctx.scale(etat.camera.zoom, etat.camera.zoom);
   ctx.translate(-etat.camera.x, -etat.camera.y);
 
-  // Sol de base
-  ctx.fillStyle = PALETTE.sol;
+  // Sol de base — dégradé radial plutôt qu'une teinte plate, pour une
+  // sensation de profondeur/éclairage même sans aucune texture image.
+  const centreX = etat.carte.largeur / 2;
+  const centreY = etat.carte.hauteur / 2;
+  const degradeSol = ctx.createRadialGradient(
+    centreX, centreY, 0,
+    centreX, centreY, Math.max(etat.carte.largeur, etat.carte.hauteur) * 0.7
+  );
+  degradeSol.addColorStop(0, ajusterCouleur(PALETTE.sol, 14));
+  degradeSol.addColorStop(0.65, PALETTE.sol);
+  degradeSol.addColorStop(1, ajusterCouleur(PALETTE.sol, -20));
+  ctx.fillStyle = degradeSol;
   ctx.fillRect(0, 0, etat.carte.largeur, etat.carte.hauteur);
 
   // Zone visible (+ marge) : tout ce qui est en dehors n'est pas dessiné
@@ -214,6 +271,40 @@ function rendreScene(temps) {
     ctx.stroke();
   }
 
+  // Touffes d'herbe — 3 brins par touffe, balancés doucement par le
+  // temps pour un environnement qui a l'air vivant même sans unité à
+  // proximité.
+  ctx.lineWidth = 1.4 / etat.camera.zoom;
+  for (const h of touffesHerbeTerrain) {
+    if (h.x < zone.x1 || h.x > zone.x2 || h.y < zone.y1 || h.y > zone.y2) continue;
+    const balancement = Math.sin(temps.total * 1.4 + h.phase) * 3;
+    ctx.strokeStyle = h.couleur;
+    for (const decalage of [-2.5, 0, 2.5]) {
+      ctx.beginPath();
+      ctx.moveTo(h.x + decalage, h.y);
+      ctx.quadraticCurveTo(
+        h.x + decalage + balancement * 0.5, h.y - h.hauteur * 0.6,
+        h.x + decalage + balancement, h.y - h.hauteur
+      );
+      ctx.stroke();
+    }
+  }
+
+  // Petites fleurs sauvages
+  for (const f of fleursTerrain) {
+    if (f.x < zone.x1 || f.x > zone.x2 || f.y < zone.y1 || f.y > zone.y2) continue;
+    ctx.fillStyle = f.couleur;
+    for (const angle of [0, 1.25, 2.5, 3.75, 5]) {
+      ctx.beginPath();
+      ctx.ellipse(f.x + Math.cos(angle) * f.rayon, f.y + Math.sin(angle) * f.rayon * 0.8, f.rayon * 0.7, f.rayon * 0.5, angle, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#e0b84a';
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.rayon * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   // Bordure nette des limites de la carte
   ctx.strokeStyle = 'rgba(58,40,24,0.5)';
   ctx.lineWidth = 4 / etat.camera.zoom;
@@ -237,6 +328,23 @@ function rendreScene(temps) {
 
   ctx.restore();
 
+  // Poussière ambiante — dessinée en coordonnées écran (donc après le
+  // ctx.restore() ci-dessus), pour dériver à une vitesse constante à
+  // l'écran quel que soit le niveau de zoom.
+  mettreAJourEtDessinerParticulesAmbiantes(temps.delta);
+
+  // Vignette cinématique — assombrit légèrement les bords de l'écran
+  // pour attirer l'œil vers le centre de l'action, un effet de
+  // profondeur qui ne coûte qu'un seul dégradé par frame.
+  const vignette = ctx.createRadialGradient(
+    canvas.width / 2, canvas.height / 2, canvas.height * 0.32,
+    canvas.width / 2, canvas.height / 2, canvas.height * 0.78
+  );
+  vignette.addColorStop(0, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1, 'rgba(0,0,0,0.38)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   // Vague 13 : la vraie barre de ressources est désormais affichée par
   // js/ui.js (HTML, lisible sur petit écran) — la surcouche de debug
   // canvas ci-dessous reste disponible pour le développement mais
@@ -244,6 +352,28 @@ function rendreScene(temps) {
   if (afficherSurcoucheDebug) dessinerSurcoucheDebug(temps);
   dessinerPanneauMission();
   dessinerEcranFinDePartie();
+}
+
+// Fait dériver et dessine les particules de poussière ambiante
+// (définies plus haut, coordonnées normalisées 0..1 par rapport à la
+// taille de l'écran) — un fil décoratif continu, indépendant du zoom
+// ou de la position de la caméra.
+function mettreAJourEtDessinerParticulesAmbiantes(delta) {
+  for (const p of particulesAmbiantes) {
+    p.x += Math.cos(p.phase) * p.derive * delta / canvas.width;
+    p.y += Math.sin(p.phase * 0.7) * (p.derive * 0.4) * delta / canvas.height - (p.derive * 0.15 * delta) / canvas.height;
+    if (p.x < -0.02) p.x = 1.02;
+    if (p.x > 1.02) p.x = -0.02;
+    if (p.y < -0.02) p.y = 1.02;
+    if (p.y > 1.02) p.y = -0.02;
+
+    ctx.globalAlpha = p.opaciteBase;
+    ctx.fillStyle = '#f0e0c0';
+    ctx.beginPath();
+    ctx.arc(p.x * canvas.width, p.y * canvas.height, p.taille, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
 // Bascule de la surcouche de diagnostic (position caméra, zoom,
