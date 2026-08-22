@@ -87,6 +87,7 @@ function mettreAJourCombat(delta) {
   deplacerUnitesEnAttaque(delta);
   deplacerMenacesSauvages(delta);
   deplacerInfiltratrices(delta);
+  mettreAJourRenfortsEnnemis(delta);
   refroidirCooldowns(delta);
   resoudreCombats();
   resoudreAttaquesFourmiliere();
@@ -249,6 +250,47 @@ function dessinerNidEnnemi(ctx) {
   ctx.font = `${14 / etat.camera.zoom}px Arial`;
   ctx.textAlign = 'center';
   ctx.fillText(capturee ? 'Nid conquis' : 'Colonie rivale', x, y - rayon - 14 / etat.camera.zoom);
+}
+
+// ---------------------------------------------------------
+// RENFORTS ENNEMIS — la colonie rivale n'est plus un simple garnison
+// statique posée une fois pour toutes : tant qu'elle n'est pas
+// capturée (infiltration.js), elle envoie de nouvelles vagues à
+// intervalle régulier, de plus en plus rapprochées et nombreuses —
+// exactement le comportement d'une IA C&C qui produit en continu
+// depuis sa base plutôt que de rester passive après sa garnison
+// initiale. Uniquement en partie libre : les missions (missions.js)
+// gèrent leur propre composition ennemie, pensée pour rester stable.
+// ---------------------------------------------------------
+const INTERVALLE_RENFORT_INITIAL = 45; // secondes avant la 1ère vague
+const INTERVALLE_RENFORT_MIN = 20;     // plancher, jamais plus rapide que ça
+const REDUCTION_INTERVALLE_PAR_VAGUE = 3;
+const BASSIN_RENFORT = ['fourmiRouge', 'fourmiRouge', 'fourmiCharpentiere', 'ouvriere'];
+
+function mettreAJourRenfortsEnnemis(delta) {
+  if (etat.missionActuelle || nidEnnemi.capturee) return;
+
+  etat.renfortEnnemi.tempsRestant -= delta;
+  if (etat.renfortEnnemi.tempsRestant > 0) return;
+
+  etat.renfortEnnemi.vagues++;
+  etat.renfortEnnemi.tempsRestant = Math.max(
+    INTERVALLE_RENFORT_MIN,
+    INTERVALLE_RENFORT_INITIAL - etat.renfortEnnemi.vagues * REDUCTION_INTERVALLE_PAR_VAGUE
+  );
+
+  const taille = Math.min(2 + etat.renfortEnnemi.vagues, 8);
+  for (let i = 0; i < taille; i++) {
+    const type = BASSIN_RENFORT[Math.floor(Math.random() * BASSIN_RENFORT.length)];
+    const angle = Math.random() * Math.PI * 2;
+    etat.unites.push(creerInstanceUnite(
+      type,
+      nidEnnemi.x + Math.cos(angle) * (nidEnnemi.rayon + 20),
+      nidEnnemi.y + Math.sin(angle) * (nidEnnemi.rayon + 20),
+      'ennemi'
+    ));
+  }
+  ajouterTexteFlottant(nidEnnemi.x, nidEnnemi.y - nidEnnemi.rayon - 20, `Renfort ennemi (vague ${etat.renfortEnnemi.vagues})`, '#e08a3c');
 }
 
 // ---------------------------------------------------------

@@ -51,6 +51,11 @@ const etat = {
   // persister est le temps de recharge restant : le déblocage
   // lui-même se déduit de etat.technologies, déjà sauvegardé.
   superarme: { cooldownRestant: 0 },
+  // Renforts périodiques de la colonie rivale (voir combat.js →
+  // mettreAJourRenfortsEnnemis) — n'agit qu'en partie libre (voir la
+  // garde sur etat.missionActuelle), pour ne pas perturber l'équilibrage
+  // fait main des missions (missions.js).
+  renfortEnnemi: { tempsRestant: 45, vagues: 0 },
   missionActuelle: null,
   progressionMission: null, // { tempsEcoule, unitesProduites, baselineRessources }
   missionsCompletees: [],   // identifiants des missions terminées — persiste entre les sessions
@@ -74,6 +79,8 @@ function nouvellePartie() {
   etat.unites.length = 0;
   etat.basesSecondaires.length = 0;
   etat.superarme.cooldownRestant = 0;
+  etat.renfortEnnemi.tempsRestant = 45;
+  etat.renfortEnnemi.vagues = 0;
   etat.missionActuelle = null;
   etat.progressionMission = null;
   // etat.missionsCompletees n'est volontairement PAS réinitialisé ici :

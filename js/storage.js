@@ -90,7 +90,8 @@ function construireInstantane() {
     // elle, n'a pas besoin d'être sauvegardée : positionnerNidEnnemi()
     // (combat.js) la recalcule de façon déterministe au chargement,
     // voir demarrerPartie ci-dessous.
-    nidEnnemiCapturee: nidEnnemi.capturee
+    nidEnnemiCapturee: nidEnnemi.capturee,
+    renfortEnnemi: { ...etat.renfortEnnemi }
   };
 }
 
@@ -127,6 +128,15 @@ function appliquerInstantane(instantane) {
   if (instantane.basesSecondaires) etat.basesSecondaires.push(...instantane.basesSecondaires);
   etat.superarme.cooldownRestant = instantane.superarmeCooldown || 0;
   nidEnnemi.capturee = instantane.nidEnnemiCapturee || false;
+  // Compatibilité avec les sauvegardes d'avant les renforts ennemis :
+  // valeurs de départ neutres si le champ n'existe pas encore.
+  if (instantane.renfortEnnemi) {
+    etat.renfortEnnemi.tempsRestant = instantane.renfortEnnemi.tempsRestant;
+    etat.renfortEnnemi.vagues = instantane.renfortEnnemi.vagues;
+  } else {
+    etat.renfortEnnemi.tempsRestant = 45;
+    etat.renfortEnnemi.vagues = 0;
+  }
 }
 
 // ---------------------------------------------------------
