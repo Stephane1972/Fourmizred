@@ -44,9 +44,12 @@
   padding: 0 10px;
   overflow-x: auto;
   scrollbar-width: none;
-  background: var(--couleur-panneau);
+  background: linear-gradient(180deg, rgba(30, 22, 12, 0.72), rgba(0, 0, 0, 0.6));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid var(--couleur-bordure);
   border-radius: 16px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
   pointer-events: none; /* purement informatif, jamais un obstacle au tactile */
 }
 #barre-ressources::-webkit-scrollbar { display: none; }
@@ -75,7 +78,10 @@
   height: 40px;
   border-radius: 50%;
   border: 1px solid var(--couleur-bordure);
-  background: var(--couleur-panneau);
+  background: linear-gradient(160deg, rgba(50, 38, 20, 0.75), rgba(0, 0, 0, 0.6));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
   color: var(--couleur-accent-fort);
   font-size: 18px;
   line-height: 1;
@@ -83,9 +89,11 @@
   align-items: center;
   justify-content: center;
   touch-action: manipulation;
+  transition: transform 0.12s ease, background 0.15s ease;
 }
 #bouton-plein-ecran:active {
   background: var(--couleur-panneau-fort);
+  transform: scale(0.92);
 }
 
 /* ---------------------------------------------------------
@@ -100,8 +108,11 @@
   bottom: 0;
   z-index: 42;
   display: flex;
-  background: var(--couleur-panneau-fort);
+  background: linear-gradient(180deg, rgba(20, 15, 8, 0.9), rgba(0, 0, 0, 0.92));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-top: 1px solid var(--couleur-bordure);
+  box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.35);
   padding: 4px max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
   gap: 4px;
 }
@@ -119,6 +130,7 @@
   border-radius: 10px;
   color: var(--couleur-texte);
   touch-action: manipulation;
+  transition: transform 0.1s ease, background 0.15s ease;
 }
 #barre-outils button .icone { font-size: clamp(18px, 5.5vw, 24px); line-height: 1; }
 #barre-outils button .etiquette { font-size: clamp(9px, 2.6vw, 11px); }
@@ -126,8 +138,9 @@
 #barre-outils button.actif {
   background: var(--couleur-accent);
   color: #16110a;
+  box-shadow: 0 0 10px rgba(217, 162, 92, 0.55);
 }
-#barre-outils button:active { background: rgba(217, 162, 92, 0.35); }
+#barre-outils button:active { background: rgba(217, 162, 92, 0.35); transform: scale(0.94); }
 
 /* ---------------------------------------------------------
    PANNEAU EXTENSIBLE — production / construction / recherche /
@@ -144,8 +157,11 @@
   max-height: 42vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: var(--couleur-panneau-fort);
+  background: linear-gradient(180deg, rgba(20, 15, 8, 0.92), rgba(0, 0, 0, 0.94));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-top: 1px solid var(--couleur-bordure);
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.4);
   padding: 10px max(10px, env(safe-area-inset-right)) 10px max(10px, env(safe-area-inset-left));
   transform: translateY(0);
   opacity: 1;
@@ -177,14 +193,15 @@
   gap: 4px;
   min-height: 52px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
   border: 1px solid var(--couleur-bordure);
   border-radius: 10px;
   color: var(--couleur-texte);
   text-align: left;
   touch-action: manipulation;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
 }
-#panneau-menu .carte:active { background: rgba(217, 162, 92, 0.25); }
+#panneau-menu .carte:active { background: rgba(217, 162, 92, 0.25); transform: scale(0.97); }
 #panneau-menu .carte .titre { font-size: clamp(12px, 3.2vw, 13.5px); font-weight: bold; }
 #panneau-menu .carte .detail { font-size: clamp(10.5px, 2.8vw, 12px); opacity: 0.8; }
 
@@ -195,6 +212,7 @@
 #panneau-menu .carte.selectionnee {
   border-color: var(--couleur-accent-fort);
   background: rgba(217, 162, 92, 0.2);
+  box-shadow: 0 0 8px rgba(217, 162, 92, 0.3);
 }
 
 #panneau-menu .ligne-liste {
@@ -205,13 +223,14 @@
   min-height: 48px;
   padding: 8px 12px;
   margin-bottom: 6px;
-  background: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
   border: 1px solid var(--couleur-bordure);
   border-radius: 10px;
   color: var(--couleur-texte);
   touch-action: manipulation;
+  transition: transform 0.1s ease, background 0.15s ease;
 }
-#panneau-menu .ligne-liste:active { background: rgba(217, 162, 92, 0.25); }
+#panneau-menu .ligne-liste:active { background: rgba(217, 162, 92, 0.25); transform: scale(0.98); }
 #panneau-menu .ligne-liste.desactive { opacity: 0.4; pointer-events: none; }
 #panneau-menu .ligne-liste .titre { font-size: clamp(12px, 3.2vw, 13.5px); font-weight: bold; }
 #panneau-menu .ligne-liste .detail { font-size: clamp(10.5px, 2.8vw, 12px); opacity: 0.8; }
@@ -251,10 +270,13 @@
 .boite-dialogue-contenu {
   width: 100%;
   max-width: 320px;
-  background: var(--couleur-panneau-fort);
+  background: linear-gradient(165deg, rgba(35, 26, 14, 0.95), rgba(0, 0, 0, 0.92));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--couleur-bordure);
   border-radius: 14px;
   padding: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 #boite-dialogue-texte {
   font-size: clamp(13px, 3.6vw, 15px);
@@ -322,9 +344,12 @@
   gap: 10px;
   max-width: calc(100vw - 24px);
   padding: 8px 10px 8px 14px;
-  background: var(--couleur-panneau-fort);
+  background: linear-gradient(160deg, rgba(40, 30, 16, 0.92), rgba(0, 0, 0, 0.85));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid var(--couleur-accent);
   border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   font-size: clamp(11px, 3.2vw, 13px);
   color: var(--couleur-texte);
 }
