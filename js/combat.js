@@ -25,6 +25,26 @@ function ordonnerAttaque(unite, cibleId) {
 // production (buildings.js → creerUnite).
 // ---------------------------------------------------------
 function ordonnerDeplacementLibre(unite, x, y) {
+  // Un ordre de déplacement explicite doit interrompre ce que l'unité
+  // faisait avant, comme dans n'importe quel RTS — sans ça, le garde-
+  // fou de deplacerUnitesLibres (plus bas, qui protège le point de
+  // ralliement d'un conflit avec un ordre AUTOMATIQUE en cours) annule
+  // silencieusement ce déplacement dès la frame suivante dès qu'un
+  // ordre de récolte/attaque/infiltration est encore actif : c'était
+  // un vrai bug, trouvé à l'audit — taper "aller ici" sur une unité en
+  // train de récolter ne faisait rigoureusement rien.
+  if (unite.etatFondation === 'construction') {
+    ajouterTexteFlottant(unite.x, unite.y - 14, 'Fondation en cours', '#e0503c');
+    return;
+  }
+  unite.ordre = null;         // annule un ordre d'attaque OU d'infiltration en cours
+  unite.cibleId = null;
+  unite.fileOrdres = [];      // vide la file de récolte
+  unite.etatRecolte = 'idle';
+  unite.noeudCibleId = null;
+  unite.etatFondation = 'idle';
+  unite.fondationCible = null;
+
   unite.destinationLibre = { x, y };
   unite.tacheActuelle = 'En déplacement';
 }

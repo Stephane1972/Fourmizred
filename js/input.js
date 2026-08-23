@@ -93,90 +93,21 @@ function initialiserInput() {
     clearTimeout(minuteurArmementSelection);
 
     if (modeGlissement === 'selection' && rectangleSelection) {
-      finaliserRectangleSelection(rectangleSelection);
+      const largeurEcran = Math.abs(rectangleSelection.x2 - rectangleSelection.x1);
+      const hauteurEcran = Math.abs(rectangleSelection.y2 - rectangleSelection.y1);
+      if (largeurEcran < SEUIL_TAP && hauteurEcran < SEUIL_TAP) {
+        // Appui prolongé mais relâché quasiment sans bouger : ce n'est
+        // PAS un vrai rectangle de sélection, juste un tap un peu lent
+        // (très courant au doigt) — on exécute le tap normal plutôt que
+        // de désélectionner aveuglément, sinon un simple tap un peu
+        // appuyé sur une unité échouerait silencieusement à la sélectionner.
+        executerTap(e.clientX, e.clientY);
+      } else {
+        finaliserRectangleSelection(rectangleSelection);
+      }
       rectangleSelection = null;
     } else if (pointeursActifs.size === 1 && distanceTotaleGlissee < SEUIL_TAP) {
-      // Si le pointeur n'a quasiment pas bougé, c'est un tap/clic simple.
-      const point = ecranVersMonde(e.clientX, e.clientY);
-
-      // Priorité absolue : un mode de placement/ciblage est actif, ce
-      // tap l'exécute et rien d'autre ne se passe ce coup-ci.
-      if (modePlacementDefense) {
-        placerDefense(modePlacementDefense, point.x, point.y);
-        modePlacementDefense = null;
-      } else if (modePlacementLaboratoire) {
-        placerLaboratoire(modePlacementLaboratoire, point.x, point.y);
-        modePlacementLaboratoire = null;
-      } else if (modePlacementBatimentProduction) {
-        placerBatimentProduction(modePlacementBatimentProduction, point.x, point.y);
-        modePlacementBatimentProduction = null;
-      } else if (modeCiblageFondation) {
-        ordonnerFondationPourSelection(point.x, point.y);
-        modeCiblageFondation = false;
-      } else if (modeCiblageSuperarme) {
-        declencherSuperarme(point.x, point.y);
-        modeCiblageSuperarme = false;
-      } else if (modeCiblageRalliement) {
-        definirPointRalliement(modeCiblageRalliement, point.x, point.y);
-        modeCiblageRalliement = null;
-      } else {
-        const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
-        const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
-        const cibleNidEnnemi = !uniteAlliee && !uniteEnnemie && trouverNidEnnemiSous(point.x, point.y);
-
-        if (uniteAlliee) {
-          // Sélectionne uniquement cette unité (remplace la sélection précédente)
-          for (const u of etat.unites) u.selectionnee = false;
-          uniteAlliee.selectionnee = true;
-        } else if (uniteEnnemie) {
-          // Toutes les unités alliées actuellement sélectionnées reçoivent
-          // l'ordre d'attaquer la cible touchée.
-          const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
-          for (const u of selectionnees) ordonnerAttaque(u, uniteEnnemie.id);
-        } else if (cibleNidEnnemi) {
-          // Une infiltratrice sélectionnée s'y rend pour capturer la
-          // colonie rivale (infiltration.js) ; sans ça, on prévient le
-          // joueur plutôt que de ne rien faire silencieusement.
-          const infiltratrices = etat.unites.filter((u) =>
-            u.faction === 'joueur' && u.type === 'ouvriereInfiltratrice' && u.pv > 0 && u.selectionnee
-          );
-          if (infiltratrices.length > 0) {
-            for (const u of infiltratrices) ordonnerInfiltration(u);
-          } else {
-            ajouterTexteFlottant(nidEnnemi.x, nidEnnemi.y - nidEnnemi.rayon - 10, 'Nécessite une ouvrière infiltratrice', '#e0503c');
-          }
-        } else {
-          const defense = trouverDefenseSous(point.x, point.y);
-          const noeud = !defense ? trouverNoeudSous(point.x, point.y) : null;
-          if (defense) {
-            reparerDefense(defense);
-          } else if (noeud) {
-            const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
-            const recolteuses = selectionnees.filter((u) => TYPES_UNITE[u.type].capaciteTransport > 0);
-            if (recolteuses.length > 0) {
-              for (const u of recolteuses) donnerOrdreRecolte(u, noeud);
-            } else {
-              // Aucune unité sélectionnée capable de transporter (ou
-              // aucune sélection du tout) : comportement précédent
-              // conservé, la colonie prélève directement dans le stock.
-              collecterRessource(noeud);
-            }
-          } else {
-            // Terrain vide : les unités actuellement sélectionnées s'y
-            // rendent (déplacement libre, voir combat.js), plutôt que
-            // de simplement désélectionner comme avant — beaucoup plus
-            // proche du réflexe RTS habituel. S'il n'y a rien à
-            // déplacer, ce tap déselectionne comme précédemment.
-            const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee && u.pv > 0);
-            if (selectionnees.length > 0) {
-              for (const u of selectionnees) ordonnerDeplacementLibre(u, point.x, point.y);
-            } else {
-              for (const u of etat.unites) u.selectionnee = false;
-            }
-            ajouterRetourTactile(point.x, point.y);
-          }
-        }
-      }
+      executerTap(e.clientX, e.clientY);
     }
 
     pointeursActifs.delete(e.pointerId);
@@ -201,19 +132,98 @@ function initialiserInput() {
   }, { passive: false });
 }
 
-// Convertit le rectangle de sélection (coordonnées écran) en monde et
-// sélectionne toutes les unités alliées vivantes qui s'y trouvent. Un
-// rectangle quasi ponctuel (relâché sans vraiment glisser) déselectionne
-// tout, comme un tap sur terrain vide.
-function finaliserRectangleSelection(rectEcran) {
-  const largeurEcran = Math.abs(rectEcran.x2 - rectEcran.x1);
-  const hauteurEcran = Math.abs(rectEcran.y2 - rectEcran.y1);
+// Exécute un tap simple (clic ou appui bref) à une position écran
+// donnée : placement/ciblage en cours en priorité absolue, sinon
+// sélection/ordre selon ce qui se trouve sous le doigt. Appelée à la
+// fois pour un tap ordinaire et pour un appui prolongé relâché sans
+// glissement réel (voir finPointeur, ci-dessus).
+function executerTap(clientX, clientY) {
+  const point = ecranVersMonde(clientX, clientY);
 
-  if (largeurEcran < SEUIL_TAP && hauteurEcran < SEUIL_TAP) {
-    for (const u of etat.unites) u.selectionnee = false;
-    return;
+  if (modePlacementDefense) {
+    placerDefense(modePlacementDefense, point.x, point.y);
+    modePlacementDefense = null;
+  } else if (modePlacementLaboratoire) {
+    placerLaboratoire(modePlacementLaboratoire, point.x, point.y);
+    modePlacementLaboratoire = null;
+  } else if (modePlacementBatimentProduction) {
+    placerBatimentProduction(modePlacementBatimentProduction, point.x, point.y);
+    modePlacementBatimentProduction = null;
+  } else if (modeCiblageFondation) {
+    ordonnerFondationPourSelection(point.x, point.y);
+    modeCiblageFondation = false;
+  } else if (modeCiblageSuperarme) {
+    declencherSuperarme(point.x, point.y);
+    modeCiblageSuperarme = false;
+  } else if (modeCiblageRalliement) {
+    definirPointRalliement(modeCiblageRalliement, point.x, point.y);
+    modeCiblageRalliement = null;
+  } else {
+    const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
+    const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
+    const cibleNidEnnemi = !uniteAlliee && !uniteEnnemie && trouverNidEnnemiSous(point.x, point.y);
+
+    if (uniteAlliee) {
+      // Sélectionne uniquement cette unité (remplace la sélection précédente)
+      for (const u of etat.unites) u.selectionnee = false;
+      uniteAlliee.selectionnee = true;
+    } else if (uniteEnnemie) {
+      // Toutes les unités alliées actuellement sélectionnées reçoivent
+      // l'ordre d'attaquer la cible touchée.
+      const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
+      for (const u of selectionnees) ordonnerAttaque(u, uniteEnnemie.id);
+    } else if (cibleNidEnnemi) {
+      // Une infiltratrice sélectionnée s'y rend pour capturer la
+      // colonie rivale (infiltration.js) ; sans ça, on prévient le
+      // joueur plutôt que de ne rien faire silencieusement.
+      const infiltratrices = etat.unites.filter((u) =>
+        u.faction === 'joueur' && u.type === 'ouvriereInfiltratrice' && u.pv > 0 && u.selectionnee
+      );
+      if (infiltratrices.length > 0) {
+        for (const u of infiltratrices) ordonnerInfiltration(u);
+      } else {
+        ajouterTexteFlottant(nidEnnemi.x, nidEnnemi.y - nidEnnemi.rayon - 10, 'Nécessite une ouvrière infiltratrice', '#e0503c');
+      }
+    } else {
+      const defense = trouverDefenseSous(point.x, point.y);
+      const noeud = !defense ? trouverNoeudSous(point.x, point.y) : null;
+      if (defense) {
+        reparerDefense(defense);
+      } else if (noeud) {
+        const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
+        const recolteuses = selectionnees.filter((u) => TYPES_UNITE[u.type].capaciteTransport > 0);
+        if (recolteuses.length > 0) {
+          for (const u of recolteuses) donnerOrdreRecolte(u, noeud);
+        } else {
+          // Aucune unité sélectionnée capable de transporter (ou
+          // aucune sélection du tout) : comportement précédent
+          // conservé, la colonie prélève directement dans le stock.
+          collecterRessource(noeud);
+        }
+      } else {
+        // Terrain vide : les unités actuellement sélectionnées s'y
+        // rendent (déplacement libre, voir combat.js), plutôt que
+        // de simplement désélectionner comme avant — beaucoup plus
+        // proche du réflexe RTS habituel. S'il n'y a rien à
+        // déplacer, ce tap déselectionne comme précédemment.
+        const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee && u.pv > 0);
+        if (selectionnees.length > 0) {
+          for (const u of selectionnees) ordonnerDeplacementLibre(u, point.x, point.y);
+        } else {
+          for (const u of etat.unites) u.selectionnee = false;
+        }
+        ajouterRetourTactile(point.x, point.y);
+      }
+    }
   }
+}
 
+// Convertit le rectangle de sélection (coordonnées écran) en monde et
+// sélectionne toutes les unités alliées vivantes qui s'y trouvent.
+// N'est appelée que pour un rectangle réellement tracé (voir
+// finPointeur ci-dessus, qui route un rectangle quasi ponctuel vers
+// executerTap à la place).
+function finaliserRectangleSelection(rectEcran) {
   const p1 = ecranVersMonde(rectEcran.x1, rectEcran.y1);
   const p2 = ecranVersMonde(rectEcran.x2, rectEcran.y2);
   const xMin = Math.min(p1.x, p2.x), xMax = Math.max(p1.x, p2.x);
