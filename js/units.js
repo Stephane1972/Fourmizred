@@ -346,13 +346,23 @@ function creerUnite(typeUnite, batiment) {
   const defBatiment = TYPES_BATIMENT_PRODUCTION[batiment.type];
   const angle = Math.random() * Math.PI * 2;
   const rayonSortie = defBatiment.rayon + 18;
+  const x = batiment.x + Math.cos(angle) * rayonSortie;
+  const y = batiment.y + Math.sin(angle) * rayonSortie;
 
-  etat.unites.push(creerInstanceUnite(
-    typeUnite,
-    batiment.x + Math.cos(angle) * rayonSortie,
-    batiment.y + Math.sin(angle) * rayonSortie,
-    'joueur'
-  ));
+  const unite = creerInstanceUnite(typeUnite, x, y, 'joueur');
+
+  // Point de ralliement (voir buildings.js → definirPointRalliement) —
+  // l'unité fraîchement produite s'y rend automatiquement toute seule,
+  // sans que le joueur ait à la sélectionner et à lui donner l'ordre
+  // manuellement à chaque sortie de bâtiment. Exclu pour la jeune
+  // reine et l'infiltratrice : leurs propres systèmes de déplacement
+  // spécialisés (colonies.js, infiltration.js) ne doivent jamais
+  // tourner en même temps que le déplacement libre sur la même unité.
+  if (batiment.pointRalliement && typeUnite !== 'jeuneReine' && typeUnite !== 'ouvriereInfiltratrice') {
+    ordonnerDeplacementLibre(unite, batiment.pointRalliement.x, batiment.pointRalliement.y);
+  }
+
+  etat.unites.push(unite);
 
   if (etat.progressionMission) etat.progressionMission.unitesProduites++;
 }
@@ -400,6 +410,13 @@ function creerInstanceUnite(typeUnite, x, y, faction) {
     fondationCible: null,
     etatFondation: 'idle', // idle | enRoute | construction
     minuteurFondation: 0,
+    // Déplacement libre (voir combat.js → ordonnerDeplacementLibre,
+    // deplacerUnitesLibres) — un simple point à atteindre, utilisé par
+    // le tap sur terrain vide (input.js) et par le point de
+    // ralliement d'un bâtiment (buildings.js). Toujours cédé le pas
+    // par tout ordre plus spécifique (récolte, attaque, fondation,
+    // infiltration) — voir la garde en tête de deplacerUnitesLibres.
+    destinationLibre: null,
     // Vétérance (voir combat.js → RANGS_VETERANCE, ajouterExperience) —
     // rang gagné au combat, PV et dégâts bonus qui vont avec.
     rang: 0,

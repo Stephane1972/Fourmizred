@@ -80,6 +80,24 @@ function dessinerMinicarte() {
   ctx.restore();
 }
 
+// Rectangle de sélection en cours de glissement (voir input.js →
+// rectangleSelection, coordonnées écran) — un simple cadre semi-
+// transparent, dessiné tout en haut du rendu puisqu'il est en repère
+// écran, indépendant de la caméra/du zoom.
+function dessinerRectangleSelection() {
+  if (!rectangleSelection) return;
+  const x = Math.min(rectangleSelection.x1, rectangleSelection.x2);
+  const y = Math.min(rectangleSelection.y1, rectangleSelection.y2);
+  const largeur = Math.abs(rectangleSelection.x2 - rectangleSelection.x1);
+  const hauteur = Math.abs(rectangleSelection.y2 - rectangleSelection.y1);
+
+  ctx.fillStyle = 'rgba(58, 224, 58, 0.14)';
+  ctx.fillRect(x, y, largeur, hauteur);
+  ctx.strokeStyle = 'rgba(58, 224, 58, 0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(x, y, largeur, hauteur);
+}
+
 // ---------------------------------------------------------
 // OMBRE PORTÉE PARTAGÉE — petit helper réutilisé par tous les
 // dessinateurs de structures (fourmilière ci-dessous, mais aussi
@@ -487,6 +505,7 @@ function rendreScene(temps) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   dessinerMinicarte();
+  dessinerRectangleSelection();
 
   // Vague 13 : la vraie barre de ressources est désormais affichée par
   // js/ui.js (HTML, lisible sur petit écran) — la surcouche de debug

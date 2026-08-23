@@ -42,6 +42,7 @@ document.getElementById('banniere-placement-annuler').addEventListener('click', 
   modePlacementBatimentProduction = null;
   modeCiblageFondation = false;
   modeCiblageSuperarme = false;
+  modeCiblageRalliement = null;
 });
 
 // -----------------------------------------------------------
@@ -88,6 +89,11 @@ function rafraichirBanniereModePlacement() {
   }
   if (modeCiblageSuperarme) {
     elBanniereTexte.textContent = 'Touchez la carte pour cibler la pluie acide';
+    elBanniere.classList.remove('masque');
+    return;
+  }
+  if (modeCiblageRalliement) {
+    elBanniereTexte.textContent = `Touchez la carte pour fixer le point de ralliement : ${TYPES_BATIMENT_PRODUCTION[modeCiblageRalliement].label}`;
     elBanniere.classList.remove('masque');
     return;
   }
@@ -153,6 +159,7 @@ function construirePanneauProduction() {
   for (const [typeBatiment, def] of Object.entries(TYPES_BATIMENT_PRODUCTION)) {
     const batiment = trouverBatiment(typeBatiment);
     const enFile = batiment && batiment.fileProduction.length;
+    const ralliement = batiment && batiment.pointRalliement;
     html += `<div class="sous-titre">${def.label}${enFile ? ` — ${batiment.fileProduction.length} en file` : ''}</div><div class="grille">`;
     for (const typeUnite of def.unitesProduisibles) {
       const defUnite = TYPES_UNITE[typeUnite];
@@ -160,6 +167,15 @@ function construirePanneauProduction() {
       html += `<button class="carte ${desactive ? 'desactive' : ''}" data-batiment="${typeBatiment}" data-unite="${typeUnite}">
         <span class="titre">${defUnite.label}</span>
         <span class="detail">${formaterCout(defUnite.cout)}</span>
+      </button>`;
+    }
+    // Point de ralliement — un bouton par bâtiment déjà construit,
+    // pour que chaque sortie d'unité s'y rende automatiquement (voir
+    // buildings.js → definirPointRalliement, units.js → creerUnite).
+    if (batiment) {
+      html += `<button class="carte" data-ralliement="${typeBatiment}">
+        <span class="titre">🚩 Point de ralliement</span>
+        <span class="detail">${ralliement ? 'Touchez la carte pour le déplacer' : 'Non défini — touchez la carte'}</span>
       </button>`;
     }
     html += '</div>';
@@ -170,6 +186,12 @@ function construirePanneauProduction() {
       const batiment = trouverBatiment(bouton.dataset.batiment);
       if (batiment) mettreEnFileProduction(batiment, bouton.dataset.unite);
       construirePanneauProduction();
+    });
+  });
+  elPanneauMenu.querySelectorAll('button[data-ralliement]').forEach((bouton) => {
+    bouton.addEventListener('click', () => {
+      activerCiblageRalliement(bouton.dataset.ralliement);
+      fermerPanneau();
     });
   });
 }

@@ -1,18 +1,30 @@
 // ===========================================================
 // INPUT — entrées souris/tactile/clavier : pilotage de la caméra
 // (glisser pour déplacer, molette/pincement pour zoomer), sélection
-// d'unités, ordres (récolte, attaque, réparation) et placement de
-// défenses/laboratoires au tap. Les raccourcis clavier de production
-// et le menu tactile équivalent sont dans main.js et js/ui.js.
+// d'unités (tap = une seule ; appui prolongé puis glisser = rectangle
+// de sélection multiple), ordres (récolte, attaque, réparation,
+// déplacement libre) et placement de défenses/laboratoires/points de
+// ralliement au tap. Les raccourcis clavier de production et le menu
+// tactile équivalent sont dans main.js et js/ui.js.
 // ===========================================================
 
 const pointeursActifs = new Map();
-let modeGlissement = null; // 'camera' | null
+let modeGlissement = null; // 'camera' | 'selection' | null
 let dernierPointUnique = null;
 let distancePincementPrecedente = null;
 let distanceTotaleGlissee = 0; // pour distinguer un tap d'un glissement
 
 const SEUIL_TAP = 6; // px : en-dessous, on considère que c'est un tap, pas un glissement
+
+// Sélection au rectangle — armée par un appui prolongé sans bouger
+// (voir pointerdown), PAS par un simple glissement rapide : ainsi le
+// geste le plus courant (glisser tout de suite pour faire défiler la
+// caméra) continue de fonctionner exactement comme avant, sans aucune
+// régression. Seul un doigt qu'on pose et qu'on laisse un court
+// instant avant de bouger déclenche le rectangle.
+const DELAI_ARMEMENT_SELECTION = 160; // ms
+let minuteurArmementSelection = null;
+let rectangleSelection = null; // { x1, y1, x2, y2 } en coordonnées écran, pendant le glissement
 
 function initialiserInput() {
   canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -26,7 +38,28 @@ function initialiserInput() {
       dernierPointUnique = { x: e.clientX, y: e.clientY };
       distanceTotaleGlissee = 0;
       canvas.classList.add('saisie'); // curseur "main fermée" pendant le glisser (desktop)
+
+      const idPointeurArme = e.pointerId;
+      clearTimeout(minuteurArmementSelection);
+      minuteurArmementSelection = setTimeout(() => {
+        // Toujours le même (et unique) doigt, pas encore parti en
+        // glissement caméra, et aucun mode de placement/ciblage en
+        // cours : on arme le rectangle de sélection à sa position
+        // actuelle plutôt qu'à celle d'il y a 160ms.
+        if (pointeursActifs.size !== 1 || !pointeursActifs.has(idPointeurArme)) return;
+        if (distanceTotaleGlissee >= SEUIL_TAP) return;
+        if (modePlacementDefense || modePlacementLaboratoire || modePlacementBatimentProduction ||
+            modeCiblageFondation || modeCiblageSuperarme || modeCiblageRalliement) return;
+
+        const p = pointeursActifs.get(idPointeurArme);
+        modeGlissement = 'selection';
+        rectangleSelection = { x1: p.x, y1: p.y, x2: p.x, y2: p.y };
+        canvas.classList.remove('saisie');
+      }, DELAI_ARMEMENT_SELECTION);
     } else if (pointeursActifs.size === 2) {
+      clearTimeout(minuteurArmementSelection);
+      modeGlissement = null; // un deuxième doigt annule tout mode en cours -> pincement
+      rectangleSelection = null;
       distancePincementPrecedente = distanceEntrePointeurs();
     }
   });
@@ -41,7 +74,11 @@ function initialiserInput() {
       distanceTotaleGlissee += Math.hypot(dx, dy);
       deplacerCamera(dx, dy);
       dernierPointUnique = { x: e.clientX, y: e.clientY };
+    } else if (pointeursActifs.size === 1 && modeGlissement === 'selection') {
+      rectangleSelection.x2 = e.clientX;
+      rectangleSelection.y2 = e.clientY;
     } else if (pointeursActifs.size === 2) {
+      clearTimeout(minuteurArmementSelection);
       const distanceActuelle = distanceEntrePointeurs();
       if (distancePincementPrecedente) {
         const facteur = distanceActuelle / distancePincementPrecedente;
@@ -53,13 +90,17 @@ function initialiserInput() {
   });
 
   function finPointeur(e) {
-    // Si le pointeur n'a quasiment pas bougé, c'est un tap/clic simple.
-    if (pointeursActifs.size === 1 && distanceTotaleGlissee < SEUIL_TAP) {
+    clearTimeout(minuteurArmementSelection);
+
+    if (modeGlissement === 'selection' && rectangleSelection) {
+      finaliserRectangleSelection(rectangleSelection);
+      rectangleSelection = null;
+    } else if (pointeursActifs.size === 1 && distanceTotaleGlissee < SEUIL_TAP) {
+      // Si le pointeur n'a quasiment pas bougé, c'est un tap/clic simple.
       const point = ecranVersMonde(e.clientX, e.clientY);
 
-      // Priorité absolue : un mode de placement (défense OU
-      // laboratoire) est actif, ce tap le construit et rien d'autre
-      // ne se passe ce coup-ci.
+      // Priorité absolue : un mode de placement/ciblage est actif, ce
+      // tap l'exécute et rien d'autre ne se passe ce coup-ci.
       if (modePlacementDefense) {
         placerDefense(modePlacementDefense, point.x, point.y);
         modePlacementDefense = null;
@@ -75,6 +116,9 @@ function initialiserInput() {
       } else if (modeCiblageSuperarme) {
         declencherSuperarme(point.x, point.y);
         modeCiblageSuperarme = false;
+      } else if (modeCiblageRalliement) {
+        definirPointRalliement(modeCiblageRalliement, point.x, point.y);
+        modeCiblageRalliement = null;
       } else {
         const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
         const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
@@ -118,7 +162,17 @@ function initialiserInput() {
               collecterRessource(noeud);
             }
           } else {
-            for (const u of etat.unites) u.selectionnee = false;
+            // Terrain vide : les unités actuellement sélectionnées s'y
+            // rendent (déplacement libre, voir combat.js), plutôt que
+            // de simplement désélectionner comme avant — beaucoup plus
+            // proche du réflexe RTS habituel. S'il n'y a rien à
+            // déplacer, ce tap déselectionne comme précédemment.
+            const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee && u.pv > 0);
+            if (selectionnees.length > 0) {
+              for (const u of selectionnees) ordonnerDeplacementLibre(u, point.x, point.y);
+            } else {
+              for (const u of etat.unites) u.selectionnee = false;
+            }
             ajouterRetourTactile(point.x, point.y);
           }
         }
@@ -129,6 +183,7 @@ function initialiserInput() {
     if (pointeursActifs.size === 0) {
       modeGlissement = null;
       dernierPointUnique = null;
+      rectangleSelection = null;
       canvas.classList.remove('saisie');
     }
     if (pointeursActifs.size < 2) {
@@ -144,6 +199,30 @@ function initialiserInput() {
     const facteur = e.deltaY < 0 ? 1.1 : 0.9;
     zoomerCamera(facteur, e.clientX, e.clientY);
   }, { passive: false });
+}
+
+// Convertit le rectangle de sélection (coordonnées écran) en monde et
+// sélectionne toutes les unités alliées vivantes qui s'y trouvent. Un
+// rectangle quasi ponctuel (relâché sans vraiment glisser) déselectionne
+// tout, comme un tap sur terrain vide.
+function finaliserRectangleSelection(rectEcran) {
+  const largeurEcran = Math.abs(rectEcran.x2 - rectEcran.x1);
+  const hauteurEcran = Math.abs(rectEcran.y2 - rectEcran.y1);
+
+  if (largeurEcran < SEUIL_TAP && hauteurEcran < SEUIL_TAP) {
+    for (const u of etat.unites) u.selectionnee = false;
+    return;
+  }
+
+  const p1 = ecranVersMonde(rectEcran.x1, rectEcran.y1);
+  const p2 = ecranVersMonde(rectEcran.x2, rectEcran.y2);
+  const xMin = Math.min(p1.x, p2.x), xMax = Math.max(p1.x, p2.x);
+  const yMin = Math.min(p1.y, p2.y), yMax = Math.max(p1.y, p2.y);
+
+  for (const u of etat.unites) {
+    if (u.faction !== 'joueur' || u.pv <= 0) { u.selectionnee = false; continue; }
+    u.selectionnee = u.x >= xMin && u.x <= xMax && u.y >= yMin && u.y <= yMax;
+  }
 }
 
 function distanceEntrePointeurs() {

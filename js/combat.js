@@ -16,6 +16,47 @@ function ordonnerAttaque(unite, cibleId) {
   unite.cibleId = cibleId;
 }
 
+// ---------------------------------------------------------
+// DÉPLACEMENT LIBRE — la seule façon, jusqu'ici, de faire marcher une
+// unité quelque part était de lui donner un ordre de récolte ou
+// d'attaque : impossible de simplement la positionner sur un point du
+// terrain. Sert à la fois au tap sur terrain vide avec une sélection
+// active (input.js) et au point de ralliement d'un bâtiment de
+// production (buildings.js → creerUnite).
+// ---------------------------------------------------------
+function ordonnerDeplacementLibre(unite, x, y) {
+  unite.destinationLibre = { x, y };
+  unite.tacheActuelle = 'En déplacement';
+}
+
+function deplacerUnitesLibres(delta) {
+  for (const u of etat.unites) {
+    if (u.faction !== 'joueur' || u.pv <= 0 || !u.destinationLibre) continue;
+
+    // Tout ordre plus spécifique prend le pas et annule le
+    // déplacement libre en cours plutôt que de tourner en même temps
+    // que lui (deux systèmes de mouvement sur la même unité produiraient
+    // un déplacement erratique).
+    if (u.ordre === 'attaquer' || u.etatFondation !== 'idle' ||
+        (u.ordre === 'infiltrer') || u.etatRecolte !== 'idle') {
+      u.destinationLibre = null;
+      continue;
+    }
+
+    const def = TYPES_UNITE[u.type];
+    const d = distance(u.x, u.y, u.destinationLibre.x, u.destinationLibre.y);
+    if (d <= 6) {
+      u.destinationLibre = null;
+      if (u.tacheActuelle === 'En déplacement') u.tacheActuelle = 'Inactive';
+      continue;
+    }
+    const angle = Math.atan2(u.destinationLibre.y - u.y, u.destinationLibre.x - u.x);
+    const pas = Math.min(def.vitesse * delta, d);
+    u.x += Math.cos(angle) * pas;
+    u.y += Math.sin(angle) * pas;
+  }
+}
+
 // `attaquant` est optionnel : quand fourni, la cible retient qui l'a
 // touchée en dernier (dernierAttaquantId), pour que nettoyerUnitesMortes()
 // sache à qui créditer l'expérience si ce coup est fatal. Les dégâts
@@ -88,6 +129,7 @@ function mettreAJourCombat(delta) {
   deplacerUnitesEnAttaque(delta);
   deplacerMenacesSauvages(delta);
   deplacerInfiltratrices(delta);
+  deplacerUnitesLibres(delta);
   mettreAJourRenfortsEnnemis(delta);
   refroidirCooldowns(delta);
   resoudreCombats();

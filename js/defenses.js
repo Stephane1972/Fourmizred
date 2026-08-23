@@ -75,6 +75,7 @@ function activerPlacementDefense(type) {
     modePlacementBatimentProduction = null;
     modeCiblageFondation = false;
     modeCiblageSuperarme = false;
+    modeCiblageRalliement = null;
     console.log(`Mode placement : ${TYPES_DEFENSE[type].label} — touchez la carte pour la construire.`);
   }
 }

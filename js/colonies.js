@@ -38,6 +38,7 @@ function activerCiblageFondation() {
   modePlacementLaboratoire = null;
   modePlacementBatimentProduction = null;
   modeCiblageSuperarme = false;
+  modeCiblageRalliement = null;
 }
 
 function toutesBasesAlliees() {

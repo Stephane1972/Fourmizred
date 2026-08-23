@@ -63,13 +63,43 @@ function genererBatimentsProduction() {
       type,
       x: pos.x,
       y: pos.y,
-      fileProduction: [] // { typeUnite, tempsRestant, tempsTotal }
+      fileProduction: [], // { typeUnite, tempsRestant, tempsTotal }
+      pointRalliement: null // voir activerCiblageRalliement / definirPointRalliement, plus bas
     });
   }
 }
 
 function trouverBatiment(type) {
   return etat.batiments.find((b) => b.type === type);
+}
+
+// ---------------------------------------------------------
+// POINT DE RALLIEMENT — même principe que les autres modes de
+// ciblage (fondation, super-arme) : armé depuis le panneau Production
+// (ui.js), un tap sur la carte le fixe. Toute unité fraîchement créée
+// par ce bâtiment s'y rend ensuite automatiquement (voir units.js →
+// creerUnite), sans que le joueur ait à la sélectionner à chaque
+// sortie.
+// ---------------------------------------------------------
+let modeCiblageRalliement = null;
+
+function activerCiblageRalliement(type) {
+  modeCiblageRalliement = modeCiblageRalliement === type ? null : type;
+  if (modeCiblageRalliement) {
+    modePlacementDefense = null;
+    modePlacementLaboratoire = null;
+    modePlacementBatimentProduction = null;
+    modeCiblageFondation = false;
+    modeCiblageSuperarme = false;
+  }
+}
+
+function definirPointRalliement(type, x, y) {
+  const b = trouverBatiment(type);
+  if (!b) return false;
+  b.pointRalliement = { x: clamp(x, 0, etat.carte.largeur), y: clamp(y, 0, etat.carte.hauteur) };
+  ajouterRetourTactile(b.pointRalliement.x, b.pointRalliement.y);
+  return true;
 }
 
 // ---------------------------------------------------------
@@ -88,6 +118,7 @@ function activerPlacementBatimentProduction(type) {
     modePlacementLaboratoire = null;
     modeCiblageFondation = false;
     modeCiblageSuperarme = false;
+    modeCiblageRalliement = null;
   }
 }
 
@@ -104,7 +135,8 @@ function placerBatimentProduction(type, x, y) {
     x, y,
     fileProduction: [],
     enConstruction: true,
-    tempsRestantConstruction: def.tempsConstruction
+    tempsRestantConstruction: def.tempsConstruction,
+    pointRalliement: null
   });
   return true;
 }

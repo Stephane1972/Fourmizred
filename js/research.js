@@ -158,6 +158,7 @@ function activerPlacementLaboratoire(type) {
     modePlacementBatimentProduction = null;
     modeCiblageFondation = false;
     modeCiblageSuperarme = false;
+    modeCiblageRalliement = null;
     console.log(`Mode placement : ${TYPES_LABORATOIRE[type].label} — touchez la carte pour le construire.`);
   }
 }
