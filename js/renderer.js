@@ -8,6 +8,79 @@
 // ===========================================================
 
 // ---------------------------------------------------------
+// MINICARTE — coin haut-droit de l'écran, dans l'espace déjà réservé
+// par la barre de ressources HTML (voir menu.css). Vue d'ensemble
+// figée (pas de tap dessus pour l'instant) : fourmilière, nids
+// secondaires, colonie rivale et toutes les unités vivantes, plus le
+// rectangle de la zone actuellement visible par la caméra.
+// ---------------------------------------------------------
+const LARGEUR_MINICARTE = 76;
+const HAUTEUR_MINICARTE = 52;
+
+function dessinerMinicarte() {
+  const marge = 10;
+  const mx = canvas.width - LARGEUR_MINICARTE - marge;
+  const my = marge + 34; // sous le bouton plein écran / la barre de ressources
+
+  const echelleX = LARGEUR_MINICARTE / etat.carte.largeur;
+  const echelleY = HAUTEUR_MINICARTE / etat.carte.hauteur;
+  const versMinicarte = (x, y) => [mx + x * echelleX, my + y * echelleY];
+
+  ctx.fillStyle = 'rgba(10,8,4,0.68)';
+  ctx.strokeStyle = 'rgba(217,162,92,0.55)';
+  ctx.lineWidth = 1;
+  ctx.fillRect(mx, my, LARGEUR_MINICARTE, HAUTEUR_MINICARTE);
+  ctx.strokeRect(mx, my, LARGEUR_MINICARTE, HAUTEUR_MINICARTE);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(mx, my, LARGEUR_MINICARTE, HAUTEUR_MINICARTE);
+  ctx.clip();
+
+  // Unités — un pixel chacune, colorées par camp
+  for (const u of etat.unites) {
+    if (u.pv <= 0) continue;
+    const [ux, uy] = versMinicarte(u.x, u.y);
+    ctx.fillStyle = u.faction === 'joueur' ? 'rgba(130,205,255,0.9)' : 'rgba(224,80,60,0.75)';
+    ctx.fillRect(ux - 0.5, uy - 0.5, 1.2, 1.2);
+  }
+
+  // Nids secondaires
+  ctx.fillStyle = '#e0b84a';
+  for (const b of etat.basesSecondaires) {
+    if (b.pv <= 0) continue;
+    const [bx, by] = versMinicarte(b.x, b.y);
+    ctx.beginPath();
+    ctx.arc(bx, by, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Fourmilière
+  const [fx, fy] = versMinicarte(fourmiliere.x, fourmiliere.y);
+  ctx.fillStyle = '#3ae03a';
+  ctx.beginPath();
+  ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Colonie rivale — verte si capturée, comme sur la carte principale
+  const [nx, ny] = versMinicarte(nidEnnemi.x, nidEnnemi.y);
+  ctx.fillStyle = nidEnnemi.capturee ? '#3ae03a' : '#e0503c';
+  ctx.beginPath();
+  ctx.arc(nx, ny, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rectangle de la zone actuellement visible par la caméra
+  const zone = zoneVisibleMonde(0);
+  const [zx1, zy1] = versMinicarte(clamp(zone.x1, 0, etat.carte.largeur), clamp(zone.y1, 0, etat.carte.hauteur));
+  const [zx2, zy2] = versMinicarte(clamp(zone.x2, 0, etat.carte.largeur), clamp(zone.y2, 0, etat.carte.hauteur));
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(zx1, zy1, Math.max(2, zx2 - zx1), Math.max(2, zy2 - zy1));
+
+  ctx.restore();
+}
+
+// ---------------------------------------------------------
 // OMBRE PORTÉE PARTAGÉE — petit helper réutilisé par tous les
 // dessinateurs de structures (fourmilière ci-dessous, mais aussi
 // buildings.js, defenses.js, research.js, resources.js, colonies.js,
@@ -412,6 +485,8 @@ function rendreScene(temps) {
   vignette.addColorStop(1, 'rgba(0,0,0,0.38)');
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  dessinerMinicarte();
 
   // Vague 13 : la vraie barre de ressources est désormais affichée par
   // js/ui.js (HTML, lisible sur petit écran) — la surcouche de debug

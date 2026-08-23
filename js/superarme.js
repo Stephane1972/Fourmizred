@@ -57,6 +57,19 @@ function declencherSuperarme(x, y) {
 
   etat.superarme.cooldownRestant = SUPERARME_COOLDOWN;
   effetsSuperarme.push({ x: cibleX, y: cibleY, age: 0 });
+  // Pluie de gouttes acides — une vingtaine de traits qui tombent à
+  // des positions/vitesses/décalages aléatoires dans le rayon
+  // d'effet, en plus du cercle d'onde de choc ci-dessus.
+  for (let i = 0; i < 22; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const rayon = Math.random() * SUPERARME_RAYON * 0.9;
+    gouttesSuperarme.push({
+      x: cibleX + Math.cos(angle) * rayon,
+      y: cibleY + Math.sin(angle) * rayon,
+      retard: Math.random() * 0.5,
+      age: 0
+    });
+  }
   ajouterTexteFlottant(
     cibleX, cibleY - SUPERARME_RAYON - 10,
     touches > 0 ? `Pluie acide : ${touches} touché(s)` : 'Pluie acide',
@@ -78,6 +91,13 @@ function mettreAJourSuperarme(delta) {
 // ---------------------------------------------------------
 const effetsSuperarme = [];
 const DUREE_EFFET_SUPERARME = 0.8;
+// Gouttes de la pluie acide (déclenchées dans declencherSuperarme,
+// plus haut) — chacune tombe verticalement à l'écran (repère monde)
+// avec un léger retard aléatoire pour un effet d'averse, pas d'une
+// simple ligne de pluie synchronisée.
+const gouttesSuperarme = [];
+const DUREE_CHUTE_GOUTTE = 0.5;
+const HAUTEUR_CHUTE_GOUTTE = 40;
 
 function dessinerEffetsSuperarme(ctx, delta) {
   for (let i = effetsSuperarme.length - 1; i >= 0; i--) {
@@ -96,6 +116,24 @@ function dessinerEffetsSuperarme(ctx, delta) {
     ctx.beginPath();
     ctx.arc(e.x, e.y, SUPERARME_RAYON, 0, Math.PI * 2);
     ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  for (let i = gouttesSuperarme.length - 1; i >= 0; i--) {
+    const g = gouttesSuperarme[i];
+    if (g.retard > 0) { g.retard -= delta; continue; }
+    g.age += delta;
+    if (g.age >= DUREE_CHUTE_GOUTTE) { gouttesSuperarme.splice(i, 1); continue; }
+
+    const t = g.age / DUREE_CHUTE_GOUTTE;
+    const y = g.y - HAUTEUR_CHUTE_GOUTTE * (1 - t);
+    ctx.globalAlpha = 0.75 * (1 - t * 0.4);
+    ctx.strokeStyle = '#a8ff7a';
+    ctx.lineWidth = 1.5 / etat.camera.zoom;
+    ctx.beginPath();
+    ctx.moveTo(g.x, y);
+    ctx.lineTo(g.x, y + 7 / etat.camera.zoom);
+    ctx.stroke();
   }
   ctx.globalAlpha = 1;
 }

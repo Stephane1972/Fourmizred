@@ -203,6 +203,8 @@ function dessinerBatimentProduction(ctx, b) {
   ctx.lineWidth = 2.5 / etat.camera.zoom;
   ctx.stroke();
 
+  dessinerIconeBatimentProduction(ctx, b.type, b.x, b.y, def.rayon);
+
   ctx.fillStyle = '#f0e0c0';
   ctx.font = `${12 / etat.camera.zoom}px Arial`;
   ctx.textAlign = 'center';
@@ -236,6 +238,55 @@ function dessinerBatimentProduction(ctx, b) {
       ctx.font = `${10 / etat.camera.zoom}px Arial`;
       ctx.fillText('+' + (b.fileProduction.length - 1), b.x, b.y + def.rayon + 22 / etat.camera.zoom);
     }
+  }
+}
+
+// Petit symbole distinctif par type de bâtiment, dessiné par-dessus
+// l'ellipse colorée — sans ça, tous les bâtiments de production ne
+// se distinguaient que par leur teinte, difficile à lire d'un coup
+// d'œil sur un petit écran.
+function dessinerIconeBatimentProduction(ctx, type, x, y, rayon) {
+  const echelle = rayon / 44;
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = 2 * echelle / etat.camera.zoom;
+
+  if (type === 'nurserie') {
+    // Petit amas d'œufs
+    for (const [dx, dy] of [[-6, 2], [0, -2], [6, 2]]) {
+      ctx.beginPath();
+      ctx.ellipse(x + dx * echelle, y + dy * echelle, 4 * echelle, 5 * echelle, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (type === 'caserne') {
+    // Mandibules croisées
+    ctx.beginPath();
+    ctx.moveTo(x - 9 * echelle, y - 7 * echelle);
+    ctx.lineTo(x + 9 * echelle, y + 7 * echelle);
+    ctx.moveTo(x + 9 * echelle, y - 7 * echelle);
+    ctx.lineTo(x - 9 * echelle, y + 7 * echelle);
+    ctx.stroke();
+  } else if (type === 'ecoleEclaireuses') {
+    // Œil (vigilance/exploration)
+    ctx.beginPath();
+    ctx.ellipse(x, y, 9 * echelle, 5 * echelle, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 3 * echelle, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (type === 'chambreSpecialistes') {
+    // Petit cristal facetté (spécialisation/chimie)
+    ctx.beginPath();
+    ctx.moveTo(x, y - 9 * echelle);
+    ctx.lineTo(x + 7 * echelle, y - 1 * echelle);
+    ctx.lineTo(x, y + 9 * echelle);
+    ctx.lineTo(x - 7 * echelle, y - 1 * echelle);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y - 9 * echelle);
+    ctx.lineTo(x, y + 9 * echelle);
+    ctx.stroke();
   }
 }
 
