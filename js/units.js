@@ -560,7 +560,7 @@ function dessinerUnite(ctx, u, temps) {
   ctx.rotate(-(u.angleDeplacement || 0));
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
-  ctx.ellipse(1, 2, 7 * echelle, 3 * echelle, 0, 0, Math.PI * 2);
+  ctx.ellipse(-1 * echelle, 2, 8 * echelle, 3 * echelle, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
@@ -571,23 +571,24 @@ function dessinerUnite(ctx, u, temps) {
   const amplitudeAntennes = u.enMouvement ? 0.3 : 0.14;
   const vitesseAntennesIdle = temps.total * (u.enMouvement ? 5 : 2) + u.phaseIdle;
 
-  // Pattes — 3 paires réparties le long du corps, en démarche
-  // "tripode" (les pattes avant-gauche/milieu-droite/arrière-gauche
-  // se balancent ensemble, en opposition avec les trois autres), ce
-  // qui reste le schéma de marche le plus reconnaissable chez la fourmi.
+  // Pattes — 3 paires, toutes rattachées près du thorax (comme une
+  // vraie fourmi : les 6 pattes partent du segment médian, jamais de
+  // l'abdomen ni de la tête), en démarche "tripode" (avant-gauche/
+  // milieu-droite/arrière-gauche ensemble, en opposition avec les
+  // trois autres) — le schéma de marche le plus reconnaissable.
   ctx.strokeStyle = ajusterCouleur(couleurCorps, -45);
   ctx.lineWidth = Math.max(0.7, 1) / etat.camera.zoom;
-  const positionsAttache = [-4, -0.3, 3.6];
+  const positionsAttache = [-1.1, 0.5, 2.1];
   for (let i = 0; i < positionsAttache.length; i++) {
     const attacheX = positionsAttache[i] * echelle;
     for (const cote of [-1, 1]) {
       const groupe = (i + (cote === -1 ? 0 : 1)) % 2;
       const balancement = Math.sin(u.phaseMarche + groupe * Math.PI) * amplitudePattes;
-      const attacheY = cote * 3.2 * echelle;
-      const genouX = attacheX + balancement * 1.6 * echelle;
-      const genouY = cote * 5.3 * echelle;
-      const piedX = attacheX + balancement * 3.2 * echelle;
-      const piedY = cote * 7.4 * echelle;
+      const attacheY = cote * 2.3 * echelle;
+      const genouX = attacheX + balancement * 1.5 * echelle;
+      const genouY = cote * 4.6 * echelle;
+      const piedX = attacheX + balancement * 3 * echelle;
+      const piedY = cote * 6.6 * echelle;
 
       ctx.beginPath();
       ctx.moveTo(attacheX, attacheY);
@@ -596,36 +597,75 @@ function dessinerUnite(ctx, u, temps) {
     }
   }
 
-  // Abdomen
+  // Corps en 3 segments distincts reliés par un pétiole fin — LA
+  // différence visuelle entre une fourmi et un termite : un termite a
+  // un corps uniforme sans taille marquée, une fourmi a un "nœud"
+  // étroit entre le thorax et le gastre (l'abdomen). Sans ce
+  // rétrécissement, même avec des pattes et des antennes, la
+  // silhouette lit comme un termite — c'est le défaut corrigé ici.
+  const xGastre = -6.3 * echelle;
+  const xPetiole = -1.9 * echelle;
+  const xThorax = 0.5 * echelle;
+  const xTete = 4.5 * echelle;
+
+  // Gastre (abdomen) — le plus gros segment, à l'arrière
   ctx.fillStyle = couleurCorps;
   ctx.beginPath();
-  ctx.ellipse(-2, 0, 6 * echelle, 4.5 * echelle, 0, 0, Math.PI * 2);
+  ctx.ellipse(xGastre, 0, 5.2 * echelle, 4 * echelle, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Tête
-  const positionTeteX = 6 * echelle * 0.85;
+  // Pétiole — le "nœud" fin qui rattache le gastre au thorax
+  ctx.fillStyle = ajusterCouleur(couleurCorps, -20);
+  ctx.beginPath();
+  ctx.ellipse(xPetiole, 0, 1.1 * echelle, 1.3 * echelle, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Thorax (mésosome) — segment médian, c'est lui qui porte les pattes
+  ctx.fillStyle = ajusterCouleur(couleurCorps, -10);
+  ctx.beginPath();
+  ctx.ellipse(xThorax, 0, 2.7 * echelle, 2.2 * echelle, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Tête — plus petite et plus anguleuse que le termite générique,
+  // avec de courtes mandibules qui pointent vers l'avant.
   ctx.fillStyle = ajusterCouleur(couleurCorps, -30);
   ctx.beginPath();
-  ctx.ellipse(positionTeteX, 0, 3.2 * echelle, 2.8 * echelle, 0, 0, Math.PI * 2);
+  ctx.ellipse(xTete, 0, 2.5 * echelle, 2.3 * echelle, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Antennes — partent de la tête, orientées vers l'avant en éventail,
-  // et tâtonnent en continu (plus vivement quand l'unité se déplace).
+  ctx.strokeStyle = ajusterCouleur(couleurCorps, -60);
+  ctx.lineWidth = Math.max(0.6, 0.8) / etat.camera.zoom;
+  const pointeTeteX = xTete + 2.3 * echelle;
+  for (const cote of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(pointeTeteX - 0.4 * echelle, cote * 0.9 * echelle);
+    ctx.lineTo(pointeTeteX + 1.5 * echelle, cote * 1.7 * echelle);
+    ctx.stroke();
+  }
+
+  // Antennes "coudées" (deux segments avec un angle net, jamais une
+  // courbe lisse) — l'autre grand indice visuel qui distingue une
+  // fourmi d'un termite, dont les antennes sont perlées et droites.
+  // Le premier segment (scape) reste presque fixe, seul le second
+  // (flagelle) tâtonne, comme le ferait une vraie antenne.
   ctx.strokeStyle = ajusterCouleur(couleurCorps, -55);
   ctx.lineWidth = Math.max(0.6, 0.9) / etat.camera.zoom;
   for (const cote of [-1, 1]) {
     const tatonnement = Math.sin(vitesseAntennesIdle + cote * 0.6) * amplitudeAntennes;
-    const angle = cote * 0.55 + tatonnement;
-    const baseX = positionTeteX;
-    const baseY = cote * 1.4 * echelle;
-    const milieuX = baseX + Math.cos(angle) * 4.5 * echelle;
-    const milieuY = baseY + Math.sin(angle) * 4.5 * echelle - cote * 0.8 * echelle;
-    const pointeX = baseX + Math.cos(angle) * 8 * echelle;
-    const pointeY = baseY + Math.sin(angle) * 8 * echelle;
+    const angleScape = cote * 0.5;
+    const angleFlagelle = cote * 1.2 + tatonnement;
+
+    const baseX = xTete;
+    const baseY = cote * 1.2 * echelle;
+    const coudeX = baseX + Math.cos(angleScape) * 3 * echelle;
+    const coudeY = baseY + Math.sin(angleScape) * 3 * echelle - cote * 0.3 * echelle;
+    const pointeX = coudeX + Math.cos(angleFlagelle) * 3.4 * echelle;
+    const pointeY = coudeY + Math.sin(angleFlagelle) * 3.4 * echelle;
 
     ctx.beginPath();
     ctx.moveTo(baseX, baseY);
-    ctx.quadraticCurveTo(milieuX, milieuY, pointeX, pointeY);
+    ctx.lineTo(coudeX, coudeY);
+    ctx.lineTo(pointeX, pointeY);
     ctx.stroke();
   }
 
