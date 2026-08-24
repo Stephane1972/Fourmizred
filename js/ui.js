@@ -46,6 +46,63 @@ document.getElementById('banniere-placement-annuler').addEventListener('click', 
 });
 
 // -----------------------------------------------------------
+// GROUPES DE CONTRÔLE (groupes.js) — barre de 5 boutons ronds posée
+// juste au-dessus de la barre d'outils. Sans clavier fiable sur
+// mobile, tap et appui long partagent le même bouton :
+//   - tap bref (relâché avant DUREE_APPUI_ASSIGNATION) → rappel
+//   - maintenu au-delà → assignation, avec un retour visuel immédiat
+//     (le bouton s'illumine) pour confirmer que l'appui a été pris en
+//     compte avant même de relâcher le doigt.
+// -----------------------------------------------------------
+const DUREE_APPUI_ASSIGNATION = 450; // ms
+
+const elGroupesControle = document.createElement('div');
+elGroupesControle.id = 'groupes-controle';
+for (let i = 0; i < NOMBRE_GROUPES_CONTROLE; i++) {
+  const bouton = document.createElement('button');
+  bouton.dataset.groupe = String(i);
+  bouton.textContent = String(i + 1);
+  elGroupesControle.appendChild(bouton);
+
+  let minuteurAssignation = null;
+  let assignationDeclenchee = false;
+
+  bouton.addEventListener('pointerdown', (e) => {
+    e.stopPropagation(); // ne doit jamais atteindre le canevas en dessous
+    assignationDeclenchee = false;
+    minuteurAssignation = setTimeout(() => {
+      assignationDeclenchee = true;
+      const nb = assignerGroupeControle(i);
+      bouton.classList.toggle('rempli', nb > 0);
+      bouton.classList.add('assigne');
+      setTimeout(() => bouton.classList.remove('assigne'), 200);
+    }, DUREE_APPUI_ASSIGNATION);
+  });
+  const annulerAppui = () => clearTimeout(minuteurAssignation);
+  bouton.addEventListener('pointerleave', annulerAppui);
+  bouton.addEventListener('pointercancel', annulerAppui);
+  bouton.addEventListener('pointerup', (e) => {
+    e.stopPropagation();
+    clearTimeout(minuteurAssignation);
+    if (assignationDeclenchee) return; // déjà traité par le minuteur ci-dessus
+    rappelerGroupeControle(i);
+  });
+}
+document.body.appendChild(elGroupesControle);
+
+function rafraichirGroupesControle() {
+  // Masquée pendant qu'un panneau est ouvert — il occupe le même
+  // espace juste au-dessus de la barre d'outils, pas la peine de
+  // superposer les deux (le joueur ferme de toute façon le panneau
+  // avant d'agir sur ses groupes en plein combat).
+  elGroupesControle.classList.toggle('masque', !!panneauOuvert);
+  elGroupesControle.querySelectorAll('button').forEach((bouton) => {
+    const i = Number(bouton.dataset.groupe);
+    bouton.classList.toggle('rempli', !groupeControleEstVide(i));
+  });
+}
+
+// -----------------------------------------------------------
 // FORMATAGE — icônes de ressources partagées par tous les panneaux.
 // -----------------------------------------------------------
 const ICONES_RESSOURCE = { nourriture: '🌾', eau: '💧', materiaux: '🪵', pheromones: '🧪' };
@@ -606,5 +663,6 @@ rafraichirBarreRessources();
 setInterval(() => {
   rafraichirBarreRessources();
   rafraichirBanniereModePlacement();
+  rafraichirGroupesControle();
   if (panneauOuvert) OUTILS.find((o) => o.id === panneauOuvert).construire();
 }, 350);

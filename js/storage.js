@@ -91,7 +91,8 @@ function construireInstantane() {
     // (combat.js) la recalcule de façon déterministe au chargement,
     // voir demarrerPartie ci-dessous.
     nidEnnemiCapturee: nidEnnemi.capturee,
-    renfortEnnemi: { ...etat.renfortEnnemi }
+    renfortEnnemi: { ...etat.renfortEnnemi },
+    groupesControle: etat.groupesControle.map((g) => [...g])
   };
 }
 
@@ -137,6 +138,10 @@ function appliquerInstantane(instantane) {
     etat.renfortEnnemi.tempsRestant = 45;
     etat.renfortEnnemi.vagues = 0;
   }
+  // Compatibilité avec les sauvegardes d'avant les groupes de contrôle.
+  etat.groupesControle = instantane.groupesControle
+    ? instantane.groupesControle.map((g) => [...g])
+    : [[], [], [], [], []];
 }
 
 // ---------------------------------------------------------

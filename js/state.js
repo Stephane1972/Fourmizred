@@ -56,6 +56,12 @@ const etat = {
   // garde sur etat.missionActuelle), pour ne pas perturber l'équilibrage
   // fait main des missions (missions.js).
   renfortEnnemi: { tempsRestant: 45, vagues: 0 },
+  // Groupes de contrôle (voir groupes.js) — 5 groupes façon C&C
+  // (Ctrl+chiffre / rappel au chiffre), adaptés au tactile : chaque
+  // entrée est un tableau d'identifiants d'unité (u.id), pas les
+  // unités elles-mêmes, pour rester léger à sauvegarder et robuste
+  // si une unité du groupe meurt entre-temps (filtré au rappel).
+  groupesControle: [[], [], [], [], []],
   missionActuelle: null,
   progressionMission: null, // { tempsEcoule, unitesProduites, baselineRessources }
   missionsCompletees: [],   // identifiants des missions terminées — persiste entre les sessions
@@ -81,6 +87,7 @@ function nouvellePartie() {
   etat.superarme.cooldownRestant = 0;
   etat.renfortEnnemi.tempsRestant = 45;
   etat.renfortEnnemi.vagues = 0;
+  etat.groupesControle = [[], [], [], [], []];
   etat.missionActuelle = null;
   etat.progressionMission = null;
   // etat.missionsCompletees n'est volontairement PAS réinitialisé ici :

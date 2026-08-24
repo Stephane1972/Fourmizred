@@ -49,6 +49,14 @@ function clamperCamera() {
   }
 }
 
+// Centre la caméra sur un point du monde sans changer le zoom — utilisé
+// par le rappel d'un groupe de contrôle (voir groupes.js).
+function centrerCameraSur(x, y) {
+  etat.camera.x = x;
+  etat.camera.y = y;
+  clamperCamera();
+}
+
 // Coordonnée écran (pixels canvas) -> coordonnée monde
 function ecranVersMonde(ex, ey) {
   const cam = etat.camera;

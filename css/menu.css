@@ -376,3 +376,54 @@
   background: var(--couleur-accent);
   color: #16110a;
 }
+
+/* ---------------------------------------------------------
+   GROUPES DE CONTRÔLE — barre de 5 boutons ronds, juste au-dessus de
+   la barre d'outils, centrée. Masquée pendant qu'un panneau est
+   ouvert (voir rafraichirGroupesControle, js/ui.js).
+   --------------------------------------------------------- */
+#groupes-controle {
+  position: fixed;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 42;
+  display: flex;
+  gap: 8px;
+  padding: 5px 8px;
+  background: linear-gradient(160deg, rgba(40, 30, 16, 0.85), rgba(0, 0, 0, 0.8));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--couleur-bordure);
+  border-radius: 20px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+#groupes-controle.masque {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+  pointer-events: none;
+}
+#groupes-controle button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--couleur-bordure);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--couleur-texte);
+  font-size: 13px;
+  font-weight: bold;
+  touch-action: manipulation;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+}
+#groupes-controle button.rempli {
+  border-color: var(--couleur-accent-fort);
+  background: rgba(217, 162, 92, 0.22);
+  color: var(--couleur-accent-fort);
+}
+#groupes-controle button.assigne {
+  background: var(--couleur-accent);
+  color: #16110a;
+  transform: scale(1.15);
+}
+#groupes-controle button:active { transform: scale(0.92); }
