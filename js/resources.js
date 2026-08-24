@@ -183,6 +183,7 @@ function annulerOrdres(unite) {
   unite.tacheActuelle = 'Inactive';
   unite.ordre = null;
   unite.cibleId = null;
+  unite.destinationLibre = null; // voir combat.js → ordonnerDeplacementLibre
 }
 
 // Avance le cycle de récolte de toutes les unités alliées concernées.
