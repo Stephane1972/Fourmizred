@@ -52,3 +52,4 @@ function rappelerGroupeControle(index) {
 function groupeControleEstVide(index) {
   return !etat.groupesControle[index] || etat.groupesControle[index].length === 0;
 }
+

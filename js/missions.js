@@ -184,6 +184,7 @@ function demarrerMission(id) {
 
   nouvellePartie();
   genererTerrain();
+  initialiserBrouillard();
   genererRessources();
   genererBatimentsProduction();
   // Remise à zéro explicite, même pour une mission sans colonie rivale

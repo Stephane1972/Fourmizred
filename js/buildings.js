@@ -64,13 +64,23 @@ function genererBatimentsProduction() {
       x: pos.x,
       y: pos.y,
       fileProduction: [], // { typeUnite, tempsRestant, tempsTotal }
-      pointRalliement: null // voir activerCiblageRalliement / definirPointRalliement, plus bas
+      pointRalliement: null, // voir activerCiblageRalliement / definirPointRalliement, plus bas
+      garnison: { unites: [], pv: 0, pvMax: 0, cooldownAttaque: 0 } // voir garnirBatiment / evacuerGarnison, plus bas
     });
   }
 }
 
 function trouverBatiment(type) {
   return etat.batiments.find((b) => b.type === type);
+}
+
+function trouverBatimentProductionSous(mondeX, mondeY) {
+  for (const b of etat.batiments) {
+    const def = TYPES_BATIMENT_PRODUCTION[b.type];
+    if (!def || b.enConstruction) continue;
+    if (distance(b.x, b.y, mondeX, mondeY) < def.rayon + 12) return b;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------
@@ -91,6 +101,7 @@ function activerCiblageRalliement(type) {
     modePlacementBatimentProduction = null;
     modeCiblageFondation = false;
     modeCiblageSuperarme = false;
+    modeDemolition = false;
   }
 }
 
@@ -99,6 +110,79 @@ function definirPointRalliement(type, x, y) {
   if (!b) return false;
   b.pointRalliement = { x: clamp(x, 0, etat.carte.largeur), y: clamp(y, 0, etat.carte.hauteur) };
   ajouterRetourTactile(b.pointRalliement.x, b.pointRalliement.y);
+  return true;
+}
+
+// ---------------------------------------------------------
+// GARNISON — des unités combattantes sélectionnées peuvent entrer
+// dans un bâtiment de production pour tirer depuis l'intérieur, comme
+// les civils garnissant un bâtiment dans Command & Conquer. L'unité
+// quitte complètement la carte (retirée de etat.unites) tant qu'elle
+// est garnie : le bâtiment agrège les dégâts et les PV de tout son
+// contingent (voir resoudreCombatsGarnison, combat.js).
+//
+// Seules les unités avec des dégâts > 0 peuvent être garnies — pas de
+// sens à y planquer une récolteuse ou une jeune reine, qui ne peuvent
+// de toute façon rien y faire d'utile en combat.
+// ---------------------------------------------------------
+function garnirBatiment(batiment, unitesSelectionnees) {
+  const def = TYPES_BATIMENT_PRODUCTION[batiment.type];
+  if (!def || batiment.enConstruction) return 0;
+
+  // Bâtiment restauré depuis une sauvegarde antérieure à cette
+  // fonctionnalité : pas de champ garnison encore posé dessus.
+  if (!batiment.garnison) batiment.garnison = { unites: [], pv: 0, pvMax: 0, cooldownAttaque: 0 };
+
+  const eligibles = unitesSelectionnees.filter((u) => TYPES_UNITE[u.type].degats > 0 && u.pv > 0);
+  if (eligibles.length === 0) return 0;
+
+  for (const u of eligibles) {
+    batiment.garnison.unites.push({ type: u.type, pv: u.pv, rang: u.rang || 0 });
+    batiment.garnison.pv += u.pv;
+    batiment.garnison.pvMax += u.pvMax;
+    const idx = etat.unites.indexOf(u);
+    if (idx !== -1) etat.unites.splice(idx, 1);
+    // Population inchangée : ces unités ne sont pas mortes, juste
+    // planquées — voir evacuerGarnison, qui les fait ressortir sans
+    // recréer de coût ni de nouveau décompte de population.
+  }
+  ajouterTexteFlottant(batiment.x, batiment.y - def.rayon - 10, `+${eligibles.length} en garnison`, '#8ac6ff');
+  return eligibles.length;
+}
+
+// Fait ressortir toute la garnison d'un bâtiment, unité par unité,
+// avec leurs PV et rang conservés tels quels.
+function evacuerGarnison(batiment) {
+  if (!batiment.garnison || batiment.garnison.unites.length === 0) return 0;
+
+  const angleDepart = Math.random() * Math.PI * 2;
+  batiment.garnison.unites.forEach((g, i) => {
+    const angle = angleDepart + i * 0.6;
+    const u = creerInstanceUnite(g.type, batiment.x + Math.cos(angle) * 26, batiment.y + Math.sin(angle) * 26, 'joueur');
+    u.pv = g.pv;
+    u.pvMax = Math.round(TYPES_UNITE[g.type].pv * (RANGS_VETERANCE[g.rang || 0].bonusPv || 1));
+    u.rang = g.rang;
+    etat.unites.push(u);
+  });
+
+  const nb = batiment.garnison.unites.length;
+  batiment.garnison = { unites: [], pv: 0, pvMax: 0, cooldownAttaque: 0 };
+  ajouterTexteFlottant(batiment.x, batiment.y, `${nb} unité(s) évacuée(s)`, '#f0e0c0');
+  return nb;
+}
+
+// ---------------------------------------------------------
+// DÉMOLITION (voir aussi defenses.js → demolirSous, qui appelle ceci)
+// ---------------------------------------------------------
+function demolirBatimentProduction(batiment) {
+  const def = TYPES_BATIMENT_PRODUCTION[batiment.type];
+  if (!def.cout) return false; // Nurserie/Caserne/École : jamais démolissables (irremplaçables)
+
+  if (batiment.garnison && batiment.garnison.unites.length > 0) evacuerGarnison(batiment);
+  rembourserMoitie(def.cout);
+  const idx = etat.batiments.indexOf(batiment);
+  if (idx !== -1) etat.batiments.splice(idx, 1);
+  ajouterTexteFlottant(batiment.x, batiment.y, def.label + ' démoli(e) (+ressources)', '#e0b84a');
   return true;
 }
 
@@ -119,6 +203,7 @@ function activerPlacementBatimentProduction(type) {
     modeCiblageFondation = false;
     modeCiblageSuperarme = false;
     modeCiblageRalliement = null;
+    modeDemolition = false;
   }
 }
 
@@ -136,7 +221,8 @@ function placerBatimentProduction(type, x, y) {
     fileProduction: [],
     enConstruction: true,
     tempsRestantConstruction: def.tempsConstruction,
-    pointRalliement: null
+    pointRalliement: null,
+    garnison: { unites: [], pv: 0, pvMax: 0, cooldownAttaque: 0 }
   });
   return true;
 }
@@ -269,6 +355,32 @@ function dessinerBatimentProduction(ctx, b) {
       ctx.fillStyle = '#f0e0c0';
       ctx.font = `${10 / etat.camera.zoom}px Arial`;
       ctx.fillText('+' + (b.fileProduction.length - 1), b.x, b.y + def.rayon + 22 / etat.camera.zoom);
+    }
+  }
+
+  // Garnison (voir garnirBatiment/evacuerGarnison, plus haut) —
+  // pastille avec le nombre d'occupants + petite barre de PV agrégés,
+  // décalée à droite pour ne jamais chevaucher la barre de production
+  // ci-dessus.
+  if (b.garnison && b.garnison.unites.length > 0) {
+    const decalageX = def.rayon + 4 / etat.camera.zoom;
+    ctx.fillStyle = 'rgba(20,15,8,0.75)';
+    ctx.beginPath();
+    ctx.arc(b.x + decalageX, b.y - def.rayon * 0.5, 9 / etat.camera.zoom, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#8ac6ff';
+    ctx.lineWidth = 1.5 / etat.camera.zoom;
+    ctx.stroke();
+    ctx.fillStyle = '#8ac6ff';
+    ctx.font = `bold ${10 / etat.camera.zoom}px Arial`;
+    ctx.fillText(String(b.garnison.unites.length), b.x + decalageX, b.y - def.rayon * 0.5 + 3.5 / etat.camera.zoom);
+
+    if (b.garnison.pv < b.garnison.pvMax) {
+      const largeurBarreG = def.rayon * 0.9;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(b.x - largeurBarreG / 2, b.y - def.rayon - 20 / etat.camera.zoom, largeurBarreG, 4 / etat.camera.zoom);
+      ctx.fillStyle = '#8ac6ff';
+      ctx.fillRect(b.x - largeurBarreG / 2, b.y - def.rayon - 20 / etat.camera.zoom, largeurBarreG * (b.garnison.pv / b.garnison.pvMax), 4 / etat.camera.zoom);
     }
   }
 }

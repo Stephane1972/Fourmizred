@@ -158,6 +158,9 @@ function executerTap(clientX, clientY) {
   } else if (modeCiblageRalliement) {
     definirPointRalliement(modeCiblageRalliement, point.x, point.y);
     modeCiblageRalliement = null;
+  } else if (modeDemolition) {
+    demolirSous(point.x, point.y);
+    modeDemolition = false;
   } else {
     const uniteAlliee = trouverUniteSous(point.x, point.y, 'joueur');
     const uniteEnnemie = !uniteAlliee ? trouverUniteSous(point.x, point.y, 'ennemi') : null;
@@ -187,6 +190,7 @@ function executerTap(clientX, clientY) {
     } else {
       const defense = trouverDefenseSous(point.x, point.y);
       const noeud = !defense ? trouverNoeudSous(point.x, point.y) : null;
+      const batimentProduction = (!defense && !noeud) ? trouverBatimentProductionSous(point.x, point.y) : null;
       if (defense) {
         reparerDefense(defense);
       } else if (noeud) {
@@ -199,6 +203,19 @@ function executerTap(clientX, clientY) {
           // aucune sélection du tout) : comportement précédent
           // conservé, la colonie prélève directement dans le stock.
           collecterRessource(noeud);
+        }
+      } else if (batimentProduction) {
+        // Garnison (buildings.js) : des unités combattantes
+        // sélectionnées entrent dans le bâtiment ; sans sélection
+        // valable, un bâtiment occupé évacue plutôt sa garnison —
+        // deux usages du même tap, comme le point de ralliement plus
+        // haut réutilise déjà le principe "un bâtiment, un tap".
+        const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
+        const combattantes = selectionnees.filter((u) => TYPES_UNITE[u.type].degats > 0);
+        if (combattantes.length > 0) {
+          garnirBatiment(batimentProduction, combattantes);
+        } else if (batimentProduction.garnison && batimentProduction.garnison.unites.length > 0) {
+          evacuerGarnison(batimentProduction);
         }
       } else {
         // Terrain vide : les unités actuellement sélectionnées s'y

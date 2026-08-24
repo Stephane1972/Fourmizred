@@ -76,6 +76,7 @@ function activerPlacementDefense(type) {
     modeCiblageFondation = false;
     modeCiblageSuperarme = false;
     modeCiblageRalliement = null;
+    modeDemolition = false;
     console.log(`Mode placement : ${TYPES_DEFENSE[type].label} — touchez la carte pour la construire.`);
   }
 }
@@ -106,6 +107,62 @@ function trouverDefenseSous(mondeX, mondeY) {
     if (distance(b.x, b.y, mondeX, mondeY) < RAYON_TOUCHE_DEFENSE) return b;
   }
   return null;
+}
+
+// ---------------------------------------------------------
+// DÉMOLITION — rembourse la moitié du coût de construction (matériaux
+// et nourriture séparément, arrondis à l'entier inférieur), comme la
+// vente d'un bâtiment dans Command & Conquer. Couvre les défenses ET
+// la Chambre des spécialistes (buildings.js) puisque toutes deux sont
+// reconstructibles ; jamais la Nurserie/Caserne/École (aucun moyen de
+// les reconstruire une fois perdues, les vendre serait irréversible
+// sans contrepartie).
+// ---------------------------------------------------------
+let modeDemolition = false;
+
+function activerDemolition() {
+  modeDemolition = !modeDemolition;
+  if (modeDemolition) {
+    modePlacementDefense = null;
+    modePlacementLaboratoire = null;
+    modePlacementBatimentProduction = null;
+    modeCiblageFondation = false;
+    modeCiblageSuperarme = false;
+    modeCiblageRalliement = null;
+  }
+}
+
+function rembourserMoitie(cout) {
+  for (const ressource in cout) {
+    etat.ressources[ressource] = (etat.ressources[ressource] || 0) + Math.floor(cout[ressource] * 0.5);
+  }
+}
+
+function demolirDefense(defense) {
+  rembourserMoitie(TYPES_DEFENSE[defense.type].cout);
+  const idx = etat.batiments.indexOf(defense);
+  if (idx !== -1) etat.batiments.splice(idx, 1);
+  ajouterTexteFlottant(defense.x, defense.y, 'Défense démolie (+ressources)', '#e0b84a');
+}
+
+// Point d'entrée unique pour le tap en mode démolition (voir
+// input.js) — cherche d'abord une défense, puis un bâtiment de
+// production démolissable (buildings.js → demolirBatimentProduction).
+function demolirSous(x, y) {
+  const defense = trouverDefenseSous(x, y);
+  if (defense) {
+    demolirDefense(defense);
+    return true;
+  }
+  const batiment = trouverBatimentProductionSous(x, y);
+  if (batiment && TYPES_BATIMENT_PRODUCTION[batiment.type].cout) {
+    demolirBatimentProduction(batiment);
+    return true;
+  }
+  if (batiment) {
+    ajouterTexteFlottant(x, y, 'Ce bâtiment ne peut pas être démoli', '#e0503c');
+  }
+  return false;
 }
 
 // ---------------------------------------------------------
@@ -176,7 +233,7 @@ function mettreAJourDefenses(delta) {
       if (!defB || b.enConstruction || b.pv <= 0) continue;
       const d = distance(u.x, u.y, b.x, b.y);
       if (d <= defU.portee) {
-        b.pv = Math.max(0, b.pv - defU.degats);
+        b.pv = Math.max(0, b.pv - degatsEffectifs(u));
         u.cooldownAttaque = defU.cadenceAttaque;
         break;
       }

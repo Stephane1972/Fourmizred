@@ -37,9 +37,13 @@ function dessinerMinicarte() {
   ctx.rect(mx, my, LARGEUR_MINICARTE, HAUTEUR_MINICARTE);
   ctx.clip();
 
-  // Unités — un pixel chacune, colorées par camp
+  // Unités — un pixel chacune, colorées par camp. Les ennemies ne
+  // s'affichent que dans une cellule actuellement visible (voir
+  // brouillard.js) : la minicarte ne doit pas trahir leur position
+  // une fois hors de vue, sinon le brouillard de guerre ne sert à rien.
   for (const u of etat.unites) {
     if (u.pv <= 0) continue;
+    if (u.faction === 'ennemi' && !celluleVisible(u.x, u.y)) continue;
     const [ux, uy] = versMinicarte(u.x, u.y);
     ctx.fillStyle = u.faction === 'joueur' ? 'rgba(130,205,255,0.9)' : 'rgba(224,80,60,0.75)';
     ctx.fillRect(ux - 0.5, uy - 0.5, 1.2, 1.2);
@@ -62,12 +66,16 @@ function dessinerMinicarte() {
   ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Colonie rivale — verte si capturée, comme sur la carte principale
-  const [nx, ny] = versMinicarte(nidEnnemi.x, nidEnnemi.y);
-  ctx.fillStyle = nidEnnemi.capturee ? '#3ae03a' : '#e0503c';
-  ctx.beginPath();
-  ctx.arc(nx, ny, 2.2, 0, Math.PI * 2);
-  ctx.fill();
+  // Colonie rivale — verte si capturée, comme sur la carte principale.
+  // N'apparaît qu'une fois explorée : sa position ne doit pas être un
+  // cadeau gratuit avant d'avoir vraiment envoyé une unité par là-bas.
+  if (celluleExploree(nidEnnemi.x, nidEnnemi.y)) {
+    const [nx, ny] = versMinicarte(nidEnnemi.x, nidEnnemi.y);
+    ctx.fillStyle = nidEnnemi.capturee ? '#3ae03a' : '#e0503c';
+    ctx.beginPath();
+    ctx.arc(nx, ny, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // Rectangle de la zone actuellement visible par la caméra
   const zone = zoneVisibleMonde(0);
@@ -483,6 +491,8 @@ function rendreScene(temps) {
   mettreAJourEtDessinerEclatsCombat(ctx, temps.delta);
   mettreAJourEtDessinerTextesFlottants(ctx, temps.delta);
   mettreAJourEtDessinerRetoursTactiles(ctx, temps.delta);
+  mettreAJourBrouillard();
+  dessinerBrouillard(ctx);
   dessinerEclairageJourNuit(temps);
 
   ctx.restore();

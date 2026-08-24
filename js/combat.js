@@ -11,6 +11,59 @@
 // ORDRE D'ATTAQUE — donné par input.js quand une unité alliée
 // sélectionnée touche une unité ennemie
 // ---------------------------------------------------------
+// ---------------------------------------------------------
+// GARNISON — un bâtiment de production occupé (voir buildings.js →
+// garnirBatiment) attaque comme le ferait une défense : dégâts
+// agrégés de tous ses occupants, une seule cible à la fois, à portée
+// fixe. Il encaisse aussi les dégâts ennemis à sa place tant qu'il
+// lui reste des PV de garnison — les occupants ne meurent jamais
+// individuellement, seule la réserve de PV agrégée diminue.
+// ---------------------------------------------------------
+const RAYON_ATTAQUE_GARNISON = 100;
+const CADENCE_ATTAQUE_GARNISON = 1.1;
+
+function resoudreCombatsGarnison(delta) {
+  for (const b of etat.batiments) {
+    if (!TYPES_BATIMENT_PRODUCTION[b.type] || !b.garnison || b.garnison.unites.length === 0) continue;
+    const defBatiment = TYPES_BATIMENT_PRODUCTION[b.type];
+
+    if (b.garnison.cooldownAttaque > 0) b.garnison.cooldownAttaque -= delta;
+
+    // Dégâts agrégés de tous les occupants, bonus de vétérance inclus
+    const degatsTotal = b.garnison.unites.reduce((somme, g) => {
+      const bonus = RANGS_VETERANCE[g.rang || 0].bonusDegats;
+      return somme + Math.round(TYPES_UNITE[g.type].degats * bonus);
+    }, 0);
+
+    if (degatsTotal > 0 && b.garnison.cooldownAttaque <= 0) {
+      let cible = null, meilleureDistance = RAYON_ATTAQUE_GARNISON;
+      for (const e of etat.unites) {
+        if (e.faction !== 'ennemi' || e.pv <= 0) continue;
+        const d = distance(b.x, b.y, e.x, e.y);
+        if (d < meilleureDistance) { meilleureDistance = d; cible = e; }
+      }
+      if (cible) {
+        infligerDegats(cible, degatsTotal);
+        b.garnison.cooldownAttaque = CADENCE_ATTAQUE_GARNISON;
+      }
+    }
+
+    // Dégâts subis à la place des occupants
+    for (const e of etat.unites) {
+      if (e.faction !== 'ennemi' || e.pv <= 0 || e.cooldownAttaque > 0) continue;
+      if (distance(e.x, e.y, b.x, b.y) <= defBatiment.rayon + 8) {
+        b.garnison.pv = Math.max(0, b.garnison.pv - degatsEffectifs(e));
+        e.cooldownAttaque = TYPES_UNITE[e.type].cadenceAttaque;
+      }
+    }
+
+    if (b.garnison.pv <= 0) {
+      ajouterTexteFlottant(b.x, b.y, 'Garnison anéantie', '#e0503c');
+      b.garnison = { unites: [], pv: 0, pvMax: 0, cooldownAttaque: 0 };
+    }
+  }
+}
+
 function ordonnerAttaque(unite, cibleId) {
   unite.ordre = 'attaquer';
   unite.cibleId = cibleId;
@@ -105,7 +158,11 @@ const RANGS_VETERANCE = [
 function degatsEffectifs(u) {
   const def = TYPES_UNITE[u.type];
   const rang = RANGS_VETERANCE[u.rang || 0];
-  return Math.round(def.degats * rang.bonusDegats);
+  let degats = def.degats * rang.bonusDegats;
+  if (u.faction === 'ennemi') {
+    degats *= (DIFFICULTES[etat.difficulte] || DIFFICULTES.normal).multiplicateurDegatsEnnemis;
+  }
+  return Math.round(degats);
 }
 
 function ajouterExperience(attaquant) {
@@ -151,6 +208,7 @@ function mettreAJourCombat(delta) {
   deplacerInfiltratrices(delta);
   deplacerUnitesLibres(delta);
   mettreAJourRenfortsEnnemis(delta);
+  resoudreCombatsGarnison(delta);
   refroidirCooldowns(delta);
   resoudreCombats();
   resoudreAttaquesFourmiliere();
@@ -323,6 +381,21 @@ function dessinerNidEnnemi(ctx) {
 }
 
 // ---------------------------------------------------------
+// DIFFICULTÉ — réglage du joueur (etat.difficulte, state.js),
+// appliqué à deux endroits seulement : les dégâts infligés PAR les
+// unités ennemies (degatsEffectifs, plus haut) et le rythme des
+// renforts périodiques (juste en dessous). Volontairement discret :
+// pas de nouvelles unités ni de règles différentes selon le niveau,
+// juste un curseur d'intensité, comme les niveaux "Facile/Normal/
+// Brutal" de C&C plutôt qu'une IA entièrement différente.
+// ---------------------------------------------------------
+const DIFFICULTES = {
+  facile: { label: 'Facile', multiplicateurDegatsEnnemis: 0.75, multiplicateurIntervalleRenfort: 1.4, multiplicateurTailleRenfort: 0.7 },
+  normal: { label: 'Normal', multiplicateurDegatsEnnemis: 1, multiplicateurIntervalleRenfort: 1, multiplicateurTailleRenfort: 1 },
+  difficile: { label: 'Difficile', multiplicateurDegatsEnnemis: 1.35, multiplicateurIntervalleRenfort: 0.7, multiplicateurTailleRenfort: 1.4 }
+};
+
+// ---------------------------------------------------------
 // RENFORTS ENNEMIS — la colonie rivale n'est plus un simple garnison
 // statique posée une fois pour toutes : tant qu'elle n'est pas
 // capturée (infiltration.js), elle envoie de nouvelles vagues à
@@ -339,6 +412,7 @@ const BASSIN_RENFORT = ['fourmiRouge', 'fourmiRouge', 'fourmiCharpentiere', 'ouv
 
 function mettreAJourRenfortsEnnemis(delta) {
   if (etat.missionActuelle || nidEnnemi.capturee) return;
+  const diff = DIFFICULTES[etat.difficulte] || DIFFICULTES.normal;
 
   etat.renfortEnnemi.tempsRestant -= delta;
   if (etat.renfortEnnemi.tempsRestant > 0) return;
@@ -347,9 +421,9 @@ function mettreAJourRenfortsEnnemis(delta) {
   etat.renfortEnnemi.tempsRestant = Math.max(
     INTERVALLE_RENFORT_MIN,
     INTERVALLE_RENFORT_INITIAL - etat.renfortEnnemi.vagues * REDUCTION_INTERVALLE_PAR_VAGUE
-  );
+  ) * diff.multiplicateurIntervalleRenfort;
 
-  const taille = Math.min(2 + etat.renfortEnnemi.vagues, 8);
+  const taille = Math.max(1, Math.round(Math.min(2 + etat.renfortEnnemi.vagues, 8) * diff.multiplicateurTailleRenfort));
   for (let i = 0; i < taille; i++) {
     const type = BASSIN_RENFORT[Math.floor(Math.random() * BASSIN_RENFORT.length)];
     const angle = Math.random() * Math.PI * 2;

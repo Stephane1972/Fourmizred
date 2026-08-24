@@ -43,6 +43,7 @@ document.getElementById('banniere-placement-annuler').addEventListener('click', 
   modeCiblageFondation = false;
   modeCiblageSuperarme = false;
   modeCiblageRalliement = null;
+  modeDemolition = false;
 });
 
 // -----------------------------------------------------------
@@ -151,6 +152,11 @@ function rafraichirBanniereModePlacement() {
   }
   if (modeCiblageRalliement) {
     elBanniereTexte.textContent = `Touchez la carte pour fixer le point de ralliement : ${TYPES_BATIMENT_PRODUCTION[modeCiblageRalliement].label}`;
+    elBanniere.classList.remove('masque');
+    return;
+  }
+  if (modeDemolition) {
+    elBanniereTexte.textContent = 'Touchez une défense ou la Chambre des spécialistes pour la démolir';
     elBanniere.classList.remove('masque');
     return;
   }
@@ -452,6 +458,10 @@ function construirePanneauPartie() {
         <span class="titre">Fonder un nid</span>
         <span class="detail">${reinesPretes > 0 ? reinesPretes + ' jeune(s) reine(s) prête(s)' : 'Sélectionnez une jeune reine'}</span>
       </button>
+      <button class="carte" id="action-demolir">
+        <span class="titre">🔨 Démolir</span>
+        <span class="detail">Défense ou Chambre des spécialistes (+50% remboursé)</span>
+      </button>
       <button class="carte" id="action-sauvegarder">
         <span class="titre">Sauvegarder</span>
         <span class="detail">Emplacement manuel</span>
@@ -465,6 +475,14 @@ function construirePanneauPartie() {
         <span class="detail">Escarmouche libre</span>
       </button>
     </div>
+    <div class="sous-titre">Difficulté (renforts et dégâts ennemis)</div>
+    <div class="grille">
+      ${Object.entries(DIFFICULTES).map(([id, d]) => `
+        <button class="carte ${etat.difficulte === id ? 'selectionnee' : ''}" data-difficulte="${id}">
+          <span class="titre">${d.label}</span>
+        </button>
+      `).join('')}
+    </div>
   `;
   document.getElementById('action-annuler-ordres').addEventListener('click', () => {
     const selectionnees = etat.unites.filter((u) => u.faction === 'joueur' && u.selectionnee);
@@ -474,6 +492,16 @@ function construirePanneauPartie() {
     if (reinesPretes === 0) return;
     activerCiblageFondation();
     fermerPanneau();
+  });
+  document.getElementById('action-demolir').addEventListener('click', () => {
+    activerDemolition();
+    fermerPanneau();
+  });
+  elPanneauMenu.querySelectorAll('button[data-difficulte]').forEach((bouton) => {
+    bouton.addEventListener('click', () => {
+      etat.difficulte = bouton.dataset.difficulte;
+      construirePanneauPartie();
+    });
   });
   document.getElementById('action-sauvegarder').addEventListener('click', () => {
     sauvegarderPartie('manuel')
@@ -508,6 +536,7 @@ function construirePanneauPartie() {
 function demarrerPartieLibre() {
   nouvellePartie();
   genererTerrain();
+  initialiserBrouillard();
   genererRessources();
   genererBatimentsProduction();
   genererColonieEnnemie();

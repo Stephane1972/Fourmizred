@@ -92,7 +92,13 @@ function construireInstantane() {
     // voir demarrerPartie ci-dessous.
     nidEnnemiCapturee: nidEnnemi.capturee,
     renfortEnnemi: { ...etat.renfortEnnemi },
-    groupesControle: etat.groupesControle.map((g) => [...g])
+    groupesControle: etat.groupesControle.map((g) => [...g]),
+    // Brouillard de guerre (brouillard.js) — seule la zone déjà
+    // EXPLORÉE est sauvegardée (un simple tableau de 0/1, quelques
+    // centaines d'entrées) ; la visibilité ACTUELLE, elle, est
+    // recalculée à chaque frame et n'a jamais besoin d'être persistée.
+    brouillardExplore: grilleBrouillard ? Array.from(grilleBrouillard.explore) : [],
+    difficulte: etat.difficulte
   };
 }
 
@@ -142,6 +148,23 @@ function appliquerInstantane(instantane) {
   etat.groupesControle = instantane.groupesControle
     ? instantane.groupesControle.map((g) => [...g])
     : [[], [], [], [], []];
+
+  // Brouillard de guerre : la grille a déjà été (re)créée fraîche par
+  // initialiserBrouillard() avant l'appel à cette fonction (voir
+  // demarrerPartie, plus bas) — on ne fait que restaurer la zone
+  // explorée par-dessus si la sauvegarde en contient une de la bonne
+  // taille (sinon la carte a changé de dimensions entre-temps : on
+  // reste sur la grille fraîche plutôt que de planter).
+  if (instantane.brouillardExplore && grilleBrouillard &&
+      instantane.brouillardExplore.length === grilleBrouillard.explore.length) {
+    grilleBrouillard.explore.set(instantane.brouillardExplore);
+  }
+
+  // Difficulté (brouillard.js n'y touche pas, combat.js si) — reste
+  // au réglage précédent du joueur si absent de la sauvegarde.
+  if (instantane.difficulte && DIFFICULTES[instantane.difficulte]) {
+    etat.difficulte = instantane.difficulte;
+  }
 }
 
 // ---------------------------------------------------------
@@ -220,6 +243,7 @@ function mettreAJourAutoSave(delta) {
 // ---------------------------------------------------------
 async function demarrerPartie() {
   genererTerrain(); // purement décoratif, régénéré à chaque lancement
+  initialiserBrouillard(); // grille dimensionnée sur etat.carte, avant même de savoir si on charge ou pas
 
   let sauvegarde = null;
   try {

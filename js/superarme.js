@@ -35,6 +35,7 @@ function activerCiblageSuperarme() {
   modePlacementBatimentProduction = null;
   modeCiblageFondation = false;
   modeCiblageRalliement = null;
+  modeDemolition = false;
 }
 
 // Déclenche réellement la frappe sur un point de la carte. Retourne

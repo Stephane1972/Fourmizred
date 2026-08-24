@@ -62,6 +62,11 @@ const etat = {
   // unités elles-mêmes, pour rester léger à sauvegarder et robuste
   // si une unité du groupe meurt entre-temps (filtré au rappel).
   groupesControle: [[], [], [], [], []],
+  // Difficulté (voir combat.js → DIFFICULTES) — volontairement PAS
+  // remise à zéro par nouvellePartie() plus bas : c'est un réglage du
+  // joueur, pas un état de partie, il doit survivre à une nouvelle
+  // partie tant qu'il ne le change pas lui-même.
+  difficulte: 'normal',
   missionActuelle: null,
   progressionMission: null, // { tempsEcoule, unitesProduites, baselineRessources }
   missionsCompletees: [],   // identifiants des missions terminées — persiste entre les sessions
