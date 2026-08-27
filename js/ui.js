@@ -17,6 +17,83 @@
 // ===========================================================
 
 // -----------------------------------------------------------
+// TUTORIEL — quelques étapes tactiles minimales avant la toute
+// première partie (rien de tout ce que le jeu propose n'était
+// expliqué nulle part : sélection multiple, points de ralliement,
+// groupes de contrôle, garnison... un joueur ne pouvait que deviner).
+// Rejouable à volonté depuis le panneau Partie.
+// -----------------------------------------------------------
+const TUTORIEL_ETAPES = [
+  {
+    titre: 'Sélection',
+    texte: 'Touchez une fourmi pour la sélectionner seule. Maintenez le doigt posé sans bouger puis glissez pour entourer et sélectionner plusieurs unités à la fois.'
+  },
+  {
+    titre: 'Déplacement',
+    texte: 'Avec des unités sélectionnées, touchez un point du terrain pour les y envoyer directement.'
+  },
+  {
+    titre: 'Récolte',
+    texte: 'Sélectionnez une ouvrière puis touchez un nœud d\'eau, de nourriture ou de matériaux pour la mettre à récolter.'
+  },
+  {
+    titre: 'Production & construction',
+    texte: 'Les boutons en bas de l\'écran ouvrent la Production (créer des unités), la Construction (défenses, bâtiments) et la Recherche.'
+  },
+  {
+    titre: 'Combat',
+    texte: 'Touchez une fourmi ennemie avec des unités sélectionnées pour attaquer. Les 5 pastilles numérotées au-dessus de la barre du bas sont vos groupes de contrôle : appui long pour y ranger la sélection actuelle, tap bref pour la rappeler.'
+  },
+  {
+    titre: 'Objectif',
+    texte: 'Protégez votre fourmilière et éliminez la colonie rivale — ou faites-y entrer une Ouvrière infiltratrice pour la capturer d\'un coup, bien plus rapide qu\'une bataille rangée.'
+  }
+];
+let etapeTutorielActuelle = 0;
+
+const elTutoriel = document.getElementById('tutoriel');
+const elTutorielTitre = document.getElementById('tutoriel-titre');
+const elTutorielTexte = document.getElementById('tutoriel-texte');
+const elTutorielPuces = document.getElementById('tutoriel-puces');
+const elTutorielSuivant = document.getElementById('tutoriel-suivant');
+const elTutorielPasser = document.getElementById('tutoriel-passer');
+
+function afficherEtapeTutoriel(index) {
+  etapeTutorielActuelle = index;
+  const etape = TUTORIEL_ETAPES[index];
+  elTutorielTitre.textContent = `${etape.titre} (${index + 1}/${TUTORIEL_ETAPES.length})`;
+  elTutorielTexte.textContent = etape.texte;
+  elTutorielPuces.innerHTML = TUTORIEL_ETAPES.map((_, i) =>
+    `<span class="${i === index ? 'actif' : ''}"></span>`
+  ).join('');
+  elTutorielSuivant.textContent = index === TUTORIEL_ETAPES.length - 1 ? 'Terminer' : 'Suivant';
+}
+
+function ouvrirTutoriel() {
+  afficherEtapeTutoriel(0);
+  elTutoriel.classList.remove('masque');
+}
+
+function fermerTutoriel() {
+  elTutoriel.classList.add('masque');
+  localStorage.setItem('fourmizred_tutoriel_vu', '1');
+}
+
+elTutorielSuivant.addEventListener('click', () => {
+  if (etapeTutorielActuelle >= TUTORIEL_ETAPES.length - 1) {
+    fermerTutoriel();
+  } else {
+    afficherEtapeTutoriel(etapeTutorielActuelle + 1);
+  }
+});
+elTutorielPasser.addEventListener('click', fermerTutoriel);
+
+// Affiché automatiquement une seule fois, à la toute première visite.
+if (localStorage.getItem('fourmizred_tutoriel_vu') !== '1') {
+  ouvrirTutoriel();
+}
+
+// -----------------------------------------------------------
 // SON — délégation globale : tout bouton HTML de l'interface déclenche
 // un clic léger et amorce l'audio (voir audio.js) si ce n'est pas déjà
 // fait, sans avoir à instrumenter chaque gestionnaire un par un.
@@ -474,6 +551,10 @@ function construirePanneauPartie() {
         <span class="titre">🔨 Démolir</span>
         <span class="detail">Défense ou Chambre des spécialistes (+50% remboursé)</span>
       </button>
+      <button class="carte" id="action-tutoriel">
+        <span class="titre">📖 Revoir le tutoriel</span>
+        <span class="detail">Sélection, récolte, combat…</span>
+      </button>
       <button class="carte" id="action-sauvegarder">
         <span class="titre">Sauvegarder</span>
         <span class="detail">Emplacement manuel</span>
@@ -508,6 +589,10 @@ function construirePanneauPartie() {
   document.getElementById('action-demolir').addEventListener('click', () => {
     activerDemolition();
     fermerPanneau();
+  });
+  document.getElementById('action-tutoriel').addEventListener('click', () => {
+    fermerPanneau();
+    ouvrirTutoriel();
   });
   elPanneauMenu.querySelectorAll('button[data-difficulte]').forEach((bouton) => {
     bouton.addEventListener('click', () => {

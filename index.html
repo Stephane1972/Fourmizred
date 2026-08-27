@@ -66,6 +66,22 @@
   </div>
 </div>
 
+<!-- Tutoriel en plusieurs étapes (voir js/ui.js) — même gabarit
+     visuel que la boîte de dialogue ci-dessus, affiché automatiquement
+     à la toute première partie (localStorage), rejouable depuis le
+     panneau Partie. -->
+<div id="tutoriel" class="masque">
+  <div class="boite-dialogue-contenu">
+    <p id="tutoriel-titre" class="tutoriel-titre"></p>
+    <p id="tutoriel-texte"></p>
+    <div id="tutoriel-puces" class="tutoriel-puces"></div>
+    <div class="boite-dialogue-actions">
+      <button id="tutoriel-passer" class="bouton-secondaire">Passer</button>
+      <button id="tutoriel-suivant" class="bouton-principal">Suivant</button>
+    </div>
+  </div>
+</div>
+
 <!-- Ordre important : config/utils/state d'abord (aucun appel de fonction
      immédiat), puis camera/input/renderer (définissent des fonctions
      utilisées par main.js), et main.js en dernier car il orchestre tout

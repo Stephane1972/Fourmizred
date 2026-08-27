@@ -452,3 +452,28 @@
   transform: scale(1.15);
 }
 #groupes-controle button:active { transform: scale(0.92); }
+
+/* ---------------------------------------------------------
+   TUTORIEL — mêmes styles de base que .boite-dialogue-contenu
+   (partagés), plus titre et puces de progression propres.
+   --------------------------------------------------------- */
+#tutoriel { z-index: 95; } /* toujours au-dessus d'une éventuelle boîte de dialogue */
+.tutoriel-titre {
+  font-size: clamp(15px, 4vw, 17px);
+  font-weight: bold;
+  color: var(--couleur-accent-fort);
+  margin: 0 0 8px;
+}
+.tutoriel-puces {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.tutoriel-puces span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+}
+.tutoriel-puces span.actif { background: var(--couleur-accent-fort); }
