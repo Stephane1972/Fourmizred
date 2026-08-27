@@ -686,10 +686,11 @@ function dessinerUnite(ctx, u, temps, simplifie) {
 
   ctx.restore();
 
-  // Chevrons de vétérance — visibles en permanence (pas seulement à la
-  // sélection) pour repérer d'un coup d'œil les unités expérimentées
-  // en plein combat, comme dans Command & Conquer.
-  if (u.rang > 0) {
+  // Chevrons de vétérance — masqués en rendu simplifié sauf pour les
+  // unités sélectionnées (voir SEUIL_RENDU_SIMPLIFIE, plus haut) :
+  // utile à l'œil sur quelques unités, superflu et coûteux en texte à
+  // dessiner sur 50+ fourmis à la fois en plein combat de masse.
+  if (u.rang > 0 && (!simplifie || u.selectionnee)) {
     ctx.fillStyle = '#ffd27a';
     ctx.font = `bold ${8 / etat.camera.zoom}px Arial`;
     ctx.textAlign = 'center';
