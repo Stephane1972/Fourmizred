@@ -304,6 +304,7 @@ function nettoyerUnitesMortes() {
     // éclats de combat (renderer.js), teinté brun/gris pour bien le
     // distinguer visuellement d'un simple coup porté.
     ajouterEclatCombat(u.x, u.y, 'rgba(120,105,80,0.9)');
+    if (u.faction === 'ennemi') etat.statistiques.ennemisElimines++;
 
     if (u.faction === 'joueur') {
       etat.ressources.population = Math.max(0, etat.ressources.population - 1);

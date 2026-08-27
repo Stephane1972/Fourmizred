@@ -94,6 +94,29 @@ if (localStorage.getItem('fourmizred_tutoriel_vu') !== '1') {
 }
 
 // -----------------------------------------------------------
+// ACTIONS DE FIN DE PARTIE — rejouer (mission en cours si applicable,
+// sinon une nouvelle partie libre) ou revenir choisir une autre
+// mission. Visibilité pilotée par etat.resultatPartie, comme le reste
+// des éléments rafraîchis périodiquement plus bas dans ce fichier.
+// -----------------------------------------------------------
+const elActionsFinPartie = document.getElementById('actions-fin-partie');
+document.getElementById('action-fin-rejouer').addEventListener('click', async () => {
+  if (etat.missionActuelle) {
+    demarrerMission(etat.missionActuelle);
+  } else {
+    demarrerPartieLibre();
+  }
+});
+document.getElementById('action-fin-missions').addEventListener('click', () => {
+  etat.missionActuelle = null;
+  etat.resultatPartie = null;
+  ouvrirPanneau('missions');
+});
+function rafraichirActionsFinDePartie() {
+  elActionsFinPartie.classList.toggle('masque', !etat.resultatPartie);
+}
+
+// -----------------------------------------------------------
 // SON — délégation globale : tout bouton HTML de l'interface déclenche
 // un clic léger et amorce l'audio (voir audio.js) si ce n'est pas déjà
 // fait, sans avoir à instrumenter chaque gestionnaire un par un.
@@ -806,5 +829,6 @@ setInterval(() => {
   rafraichirBarreRessources();
   rafraichirBanniereModePlacement();
   rafraichirGroupesControle();
+  rafraichirActionsFinDePartie();
   if (panneauOuvert) OUTILS.find((o) => o.id === panneauOuvert).construire();
 }, 350);

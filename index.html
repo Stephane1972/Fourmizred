@@ -54,8 +54,7 @@
 <button id="bouton-plein-ecran" aria-label="Plein écran" title="Plein écran">⛶</button>
 <button id="bouton-son" aria-label="Son" title="Activer/couper le son">🔊</button>
 
-<!-- Boîte de dialogue générique (confirmation mission / nouvelle
-     partie / quitter), un seul gabarit réutilisé pour toutes -->
+<!-- Boîte de dialogue générique -->
 <div id="boite-dialogue" class="masque">
   <div class="boite-dialogue-contenu">
     <p id="boite-dialogue-texte"></p>
@@ -64,6 +63,15 @@
       <button id="boite-dialogue-confirmer" class="bouton-principal"></button>
     </div>
   </div>
+</div>
+
+<!-- Actions de fin de partie (voir js/ui.js → rafraichirActionsFinDePartie)
+     — superposées au canevas, qui affiche déjà VICTOIRE/DÉFAITE et les
+     statistiques ; ce bloc HTML ne fournit que les boutons tactiles,
+     un canevas seul n'étant pas cliquable. -->
+<div id="actions-fin-partie" class="masque">
+  <button id="action-fin-rejouer" class="bouton-principal">🔁 Rejouer</button>
+  <button id="action-fin-missions" class="bouton-secondaire">📜 Missions</button>
 </div>
 
 <!-- Tutoriel en plusieurs étapes (voir js/ui.js) — même gabarit

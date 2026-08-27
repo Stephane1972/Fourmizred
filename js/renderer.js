@@ -567,14 +567,30 @@ function dessinerEcranFinDePartie() {
 
   ctx.fillStyle = victoire ? '#3ae03a' : '#e0503c';
   ctx.font = 'bold 42px Arial';
-  ctx.fillText(victoire ? 'VICTOIRE' : 'DÉFAITE', canvas.width / 2, canvas.height / 2 - 10);
+  ctx.fillText(victoire ? 'VICTOIRE' : 'DÉFAITE', canvas.width / 2, canvas.height / 2 - 66);
 
   ctx.fillStyle = '#f0e0c0';
   ctx.font = '15px Arial';
   ctx.fillText(
     victoire ? 'Toutes les menaces ont été éliminées.' : 'La fourmilière a été détruite.',
-    canvas.width / 2, canvas.height / 2 + 26
+    canvas.width / 2, canvas.height / 2 - 34
   );
+
+  // Statistiques de la partie (etat.statistiques, alimentées depuis
+  // units.js/combat.js/resources.js) — jusqu'ici l'écran de fin ne
+  // disait absolument rien de la partie qui vient de se dérouler.
+  const dureeSecondes = Math.max(0, Math.floor(temps.total - etat.statistiques.tempsDebut));
+  const minutes = Math.floor(dureeSecondes / 60);
+  const secondes = dureeSecondes % 60;
+  const lignes = [
+    `⏱ Durée : ${minutes}m ${String(secondes).padStart(2, '0')}s`,
+    `⚔ Ennemis éliminés : ${etat.statistiques.ennemisElimines}`,
+    `🐜 Unités produites : ${etat.statistiques.unitesProduites}`,
+    `🌾 Ressources récoltées : ${formaterNombre(etat.statistiques.ressourcesRecoltees)}`
+  ];
+  ctx.font = '13px Arial';
+  ctx.fillStyle = '#d8c8a8';
+  lignes.forEach((ligne, i) => ctx.fillText(ligne, canvas.width / 2, canvas.height / 2 + 2 + i * 20));
 }
 
 // Petit panneau de diagnostic, utile pendant le développement — sera

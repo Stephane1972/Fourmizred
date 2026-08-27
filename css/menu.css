@@ -477,3 +477,26 @@
   background: rgba(255, 255, 255, 0.25);
 }
 .tutoriel-puces span.actif { background: var(--couleur-accent-fort); }
+
+/* ---------------------------------------------------------
+   ACTIONS DE FIN DE PARTIE — sous les statistiques dessinées par le
+   canevas (voir renderer.js → dessinerEcranFinDePartie), centrées.
+   --------------------------------------------------------- */
+#actions-fin-partie {
+  position: fixed;
+  top: 62%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(240px, 80vw);
+}
+#actions-fin-partie.masque { display: none; }
+#actions-fin-partie button {
+  min-height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+  touch-action: manipulation;
+}

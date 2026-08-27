@@ -255,6 +255,7 @@ function mettreAJourRecolte(delta) {
       if (u.minuteurRecolte <= 0) {
         if (u.cargo > 0 && u.typeCargo) {
           etat.ressources[u.typeCargo] = (etat.ressources[u.typeCargo] || 0) + u.cargo;
+          etat.statistiques.ressourcesRecoltees += u.cargo;
           const baseDepot = trouverBaseAllieeProche(u.x, u.y);
           ajouterTexteFlottant(baseDepot.x, baseDepot.y - baseDepot.rayon - 10, '+' + u.cargo, '#f0e0c0');
         }

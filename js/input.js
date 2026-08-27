@@ -139,6 +139,7 @@ function initialiserInput() {
 // fois pour un tap ordinaire et pour un appui prolongé relâché sans
 // glissement réel (voir finPointeur, ci-dessus).
 function executerTap(clientX, clientY) {
+  if (etat.resultatPartie) return; // écran de fin affiché : les boutons HTML (ui.js) prennent le relais
   jouerClic();
   const point = ecranVersMonde(clientX, clientY);
 

@@ -62,6 +62,10 @@ const etat = {
   // unités elles-mêmes, pour rester léger à sauvegarder et robuste
   // si une unité du groupe meurt entre-temps (filtré au rappel).
   groupesControle: [[], [], [], [], []],
+  // Statistiques de la partie en cours (voir renderer.js →
+  // dessinerEcranFinDePartie) — contrairement à etat.progressionMission,
+  // celles-ci existent aussi en partie libre, pas seulement en mission.
+  statistiques: { unitesProduites: 0, ennemisElimines: 0, ressourcesRecoltees: 0, tempsDebut: 0 },
   // Difficulté (voir combat.js → DIFFICULTES) — volontairement PAS
   // remise à zéro par nouvellePartie() plus bas : c'est un réglage du
   // joueur, pas un état de partie, il doit survivre à une nouvelle
@@ -93,6 +97,7 @@ function nouvellePartie() {
   etat.renfortEnnemi.tempsRestant = 45;
   etat.renfortEnnemi.vagues = 0;
   etat.groupesControle = [[], [], [], [], []];
+  etat.statistiques = { unitesProduites: 0, ennemisElimines: 0, ressourcesRecoltees: 0, tempsDebut: temps.total };
   etat.missionActuelle = null;
   etat.progressionMission = null;
   // etat.missionsCompletees n'est volontairement PAS réinitialisé ici :
