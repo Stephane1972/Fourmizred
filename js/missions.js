@@ -255,10 +255,12 @@ function mettreAJourMission(delta) {
 
   if (fourmiliere.pv <= 0) {
     etat.resultatPartie = 'defaite';
+    jouerDefaite();
     return;
   }
   if (mission.dureeLimite && progression.tempsEcoule >= mission.dureeLimite) {
     etat.resultatPartie = 'defaite';
+    jouerDefaite();
     return;
   }
 
@@ -269,6 +271,7 @@ function mettreAJourMission(delta) {
       etat.missionsCompletees.push(etat.missionActuelle);
     }
     etat.resultatPartie = 'victoire';
+    jouerVictoire();
   }
 }
 

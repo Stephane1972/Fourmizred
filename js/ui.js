@@ -17,6 +17,16 @@
 // ===========================================================
 
 // -----------------------------------------------------------
+// SON — délégation globale : tout bouton HTML de l'interface déclenche
+// un clic léger et amorce l'audio (voir audio.js) si ce n'est pas déjà
+// fait, sans avoir à instrumenter chaque gestionnaire un par un.
+// -----------------------------------------------------------
+document.addEventListener('pointerdown', (e) => {
+  demarrerAudio();
+  if (e.target.closest('button')) jouerClic();
+});
+
+// -----------------------------------------------------------
 // RÉFÉRENCES DOM — les conteneurs vides posés dans index.html.
 // -----------------------------------------------------------
 const elBarreRessources = document.getElementById('barre-ressources');
@@ -70,6 +80,8 @@ for (let i = 0; i < NOMBRE_GROUPES_CONTROLE; i++) {
 
   bouton.addEventListener('pointerdown', (e) => {
     e.stopPropagation(); // ne doit jamais atteindre le canevas en dessous
+    demarrerAudio();
+    jouerClic();
     assignationDeclenchee = false;
     minuteurAssignation = setTimeout(() => {
       assignationDeclenchee = true;
@@ -607,6 +619,22 @@ document.addEventListener('fullscreenchange', () => {
 document.addEventListener('webkitfullscreenchange', () => {
   elBoutonPleinEcran.classList.toggle('actif', !!elementPleinEcran());
 });
+
+// -----------------------------------------------------------
+// BOUTON SON — bascule la sourdine (voir audio.js), état visuel et
+// persistance déjà gérés là-bas (localStorage).
+// -----------------------------------------------------------
+const elBoutonSon = document.getElementById('bouton-son');
+function rafraichirBoutonSon() {
+  const coupe = estEnSourdine();
+  elBoutonSon.textContent = coupe ? '🔇' : '🔊';
+  elBoutonSon.classList.toggle('actif', !coupe);
+}
+elBoutonSon.addEventListener('click', () => {
+  basculerSourdine();
+  rafraichirBoutonSon();
+});
+rafraichirBoutonSon();
 
 let pleinEcranDejaTente = false;
 canvas.addEventListener('pointerdown', () => {

@@ -30,6 +30,7 @@ function initialiserInput() {
   canvas.addEventListener('contextmenu', e => e.preventDefault());
 
   canvas.addEventListener('pointerdown', (e) => {
+    demarrerAudio(); // premier geste possible de la partie : initialise le contexte audio ici si besoin
     canvas.setPointerCapture(e.pointerId);
     pointeursActifs.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -138,6 +139,7 @@ function initialiserInput() {
 // fois pour un tap ordinaire et pour un appui prolongé relâché sans
 // glissement réel (voir finPointeur, ci-dessus).
 function executerTap(clientX, clientY) {
+  jouerClic();
   const point = ecranVersMonde(clientX, clientY);
 
   if (modePlacementDefense) {

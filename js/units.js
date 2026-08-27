@@ -363,6 +363,7 @@ function creerUnite(typeUnite, batiment) {
   }
 
   etat.unites.push(unite);
+  jouerProduction();
 
   if (etat.progressionMission) etat.progressionMission.unitesProduites++;
 }

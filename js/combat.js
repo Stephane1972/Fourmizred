@@ -139,6 +139,7 @@ function infligerDegats(cible, degats, attaquant) {
   cible.pv = Math.max(0, cible.pv - degats);
   if (attaquant) cible.dernierAttaquantId = attaquant.id;
   ajouterEclatCombat(cible.x, cible.y, '#ffcf6a');
+  jouerImpact();
 }
 
 // ---------------------------------------------------------
@@ -178,6 +179,7 @@ function ajouterExperience(attaquant) {
   attaquant.pvMax = Math.round(TYPES_UNITE[attaquant.type].pv * prochain.bonusPv);
   attaquant.pv = Math.min(attaquant.pvMax, attaquant.pv + (attaquant.pvMax - ancienPvMax));
   ajouterTexteFlottant(attaquant.x, attaquant.y - 16, prochain.label + ' !', '#ffd27a');
+  jouerPromotion();
 }
 
 // ---------------------------------------------------------
@@ -435,6 +437,7 @@ function mettreAJourRenfortsEnnemis(delta) {
     ));
   }
   ajouterTexteFlottant(nidEnnemi.x, nidEnnemi.y - nidEnnemi.rayon - 20, `Renfort ennemi (vague ${etat.renfortEnnemi.vagues})`, '#e08a3c');
+  jouerAlerteAttaqueThrottle();
 }
 
 // ---------------------------------------------------------
@@ -511,6 +514,18 @@ function deplacerMenacesSauvages(delta) {
 // est retiré, mais — contrairement à la fourmilière — ne met jamais
 // fin à la partie (voir verifierFinDePartie).
 // ---------------------------------------------------------
+// Alerte sonore d'attaque sur une structure — limitée dans le temps
+// pour ne jamais spammer (plusieurs ennemis peuvent frapper la même
+// frame), un seul avertissement audible toutes les quelques secondes
+// suffit largement à alerter le joueur.
+let derniereAlerteSonore = 0;
+function jouerAlerteAttaqueThrottle() {
+  const maintenant = performance.now();
+  if (maintenant - derniereAlerteSonore < 3000) return;
+  derniereAlerteSonore = maintenant;
+  jouerAlerteAttaque();
+}
+
 function resoudreAttaquesFourmiliere() {
   for (const u of etat.unites) {
     if (u.faction !== 'ennemi' || u.pv <= 0 || u.cooldownAttaque > 0) continue;
@@ -520,6 +535,7 @@ function resoudreAttaquesFourmiliere() {
     if (fourmiliere.pv > 0 && distance(u.x, u.y, fourmiliere.x, fourmiliere.y) <= fourmiliere.rayon + 8) {
       fourmiliere.pv = Math.max(0, fourmiliere.pv - degats);
       u.cooldownAttaque = def.cadenceAttaque;
+      jouerAlerteAttaqueThrottle();
       continue;
     }
 
@@ -528,6 +544,7 @@ function resoudreAttaquesFourmiliere() {
       if (distance(u.x, u.y, base.x, base.y) <= base.rayon + 8) {
         base.pv = Math.max(0, base.pv - degats);
         u.cooldownAttaque = def.cadenceAttaque;
+        jouerAlerteAttaqueThrottle();
         break;
       }
     }
@@ -550,10 +567,12 @@ function verifierFinDePartie() {
 
   if (fourmiliere.pv <= 0) {
     etat.resultatPartie = 'defaite';
+    jouerDefaite();
     return;
   }
   const hostilesRestants = etat.unites.filter((u) => u.faction === 'ennemi' && u.pv > 0).length;
   if (hostilesRestants === 0) {
     etat.resultatPartie = 'victoire';
+    jouerVictoire();
   }
 }

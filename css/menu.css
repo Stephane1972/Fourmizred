@@ -34,7 +34,7 @@
 #barre-ressources {
   position: fixed;
   top: max(10px, env(safe-area-inset-top));
-  left: calc(52px + max(10px, env(safe-area-inset-left)));
+  left: calc(94px + max(10px, env(safe-area-inset-left)));
   right: calc(96px + max(10px, env(safe-area-inset-right)));
   z-index: 40;
   display: flex;
@@ -95,6 +95,31 @@
   background: var(--couleur-panneau-fort);
   transform: scale(0.92);
 }
+
+#bouton-son {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: calc(54px + max(10px, env(safe-area-inset-left)));
+  z-index: 41;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--couleur-bordure);
+  background: linear-gradient(160deg, rgba(50, 38, 20, 0.75), rgba(0, 0, 0, 0.6));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  color: var(--couleur-accent-fort);
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+#bouton-son:active { transform: scale(0.92); }
+#bouton-son.actif { color: var(--couleur-accent-fort); }
 
 /* ---------------------------------------------------------
    BARRE D'OUTILS — toujours visible, en bas de l'écran. Chaque
@@ -325,7 +350,7 @@
    --------------------------------------------------------- */
 @media (max-width: 340px) {
   #panneau-menu .grille { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-  #barre-ressources { left: calc(46px + max(8px, env(safe-area-inset-left))); right: calc(80px + max(8px, env(safe-area-inset-right))); }
+  #barre-ressources { left: calc(88px + max(8px, env(safe-area-inset-left))); right: calc(80px + max(8px, env(safe-area-inset-right))); }
 }
 
 /* ---------------------------------------------------------

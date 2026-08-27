@@ -64,4 +64,5 @@ function capturerNidEnnemi(infiltratrice) {
     }
   }
   etat.resultatPartie = 'victoire';
+  jouerVictoire();
 }

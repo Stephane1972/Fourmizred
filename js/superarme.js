@@ -59,6 +59,7 @@ function declencherSuperarme(x, y) {
 
   etat.superarme.cooldownRestant = SUPERARME_COOLDOWN;
   effetsSuperarme.push({ x: cibleX, y: cibleY, age: 0 });
+  jouerSuperarme();
   // Pluie de gouttes acides — une vingtaine de traits qui tombent à
   // des positions/vitesses/décalages aléatoires dans le rayon
   // d'effet, en plus du cercle d'onde de choc ci-dessus.
