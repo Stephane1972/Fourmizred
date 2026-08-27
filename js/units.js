@@ -484,7 +484,7 @@ function trouverUniteSous(mondeX, mondeY, faction) {
 // unité), avec une teinte rougeâtre pour la faction ennemie afin de
 // distinguer immédiatement alliés et adversaires au combat.
 // ---------------------------------------------------------
-function dessinerUnite(ctx, u, temps) {
+function dessinerUnite(ctx, u, temps, simplifie) {
   const def = TYPES_UNITE[u.type];
   if (!def) return;
 
@@ -557,14 +557,17 @@ function dessinerUnite(ctx, u, temps) {
   }
 
   // Ombre (dessinée hors rotation le temps de son propre calcul pour
-  // rester au sol, donc on la remet en coordonnées non tournées)
-  ctx.save();
-  ctx.rotate(-(u.angleDeplacement || 0));
-  ctx.fillStyle = 'rgba(0,0,0,0.2)';
-  ctx.beginPath();
-  ctx.ellipse(-1 * echelle, 2, 8 * echelle, 3 * echelle, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+  // rester au sol, donc on la remet en coordonnées non tournées) —
+  // omise en rendu simplifié (voir SEUIL_RENDU_SIMPLIFIE plus haut).
+  if (!simplifie) {
+    ctx.save();
+    ctx.rotate(-(u.angleDeplacement || 0));
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(-1 * echelle, 2, 8 * echelle, 3 * echelle, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 
   // Amplitude du balancement des pattes et des antennes : bien plus
   // marquée en mouvement, mais jamais totalement figée à l'arrêt (les
@@ -578,24 +581,29 @@ function dessinerUnite(ctx, u, temps) {
   // l'abdomen ni de la tête), en démarche "tripode" (avant-gauche/
   // milieu-droite/arrière-gauche ensemble, en opposition avec les
   // trois autres) — le schéma de marche le plus reconnaissable.
-  ctx.strokeStyle = ajusterCouleur(couleurCorps, -45);
-  ctx.lineWidth = Math.max(0.7, 1) / etat.camera.zoom;
-  const positionsAttache = [-1.1, 0.5, 2.1];
-  for (let i = 0; i < positionsAttache.length; i++) {
-    const attacheX = positionsAttache[i] * echelle;
-    for (const cote of [-1, 1]) {
-      const groupe = (i + (cote === -1 ? 0 : 1)) % 2;
-      const balancement = Math.sin(u.phaseMarche + groupe * Math.PI) * amplitudePattes;
-      const attacheY = cote * 2.3 * echelle;
-      const genouX = attacheX + balancement * 1.5 * echelle;
-      const genouY = cote * 4.6 * echelle;
-      const piedX = attacheX + balancement * 3 * echelle;
-      const piedY = cote * 6.6 * echelle;
+  // Omises en rendu simplifié : c'est la partie la plus coûteuse
+  // (6 courbes par fourmi) pour le moins visible à l'échelle d'un
+  // combat de masse vu de loin.
+  if (!simplifie) {
+    ctx.strokeStyle = ajusterCouleur(couleurCorps, -45);
+    ctx.lineWidth = Math.max(0.7, 1) / etat.camera.zoom;
+    const positionsAttache = [-1.1, 0.5, 2.1];
+    for (let i = 0; i < positionsAttache.length; i++) {
+      const attacheX = positionsAttache[i] * echelle;
+      for (const cote of [-1, 1]) {
+        const groupe = (i + (cote === -1 ? 0 : 1)) % 2;
+        const balancement = Math.sin(u.phaseMarche + groupe * Math.PI) * amplitudePattes;
+        const attacheY = cote * 2.3 * echelle;
+        const genouX = attacheX + balancement * 1.5 * echelle;
+        const genouY = cote * 4.6 * echelle;
+        const piedX = attacheX + balancement * 3 * echelle;
+        const piedY = cote * 6.6 * echelle;
 
-      ctx.beginPath();
-      ctx.moveTo(attacheX, attacheY);
-      ctx.quadraticCurveTo(genouX, genouY, piedX, piedY);
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(attacheX, attacheY);
+        ctx.quadraticCurveTo(genouX, genouY, piedX, piedY);
+        ctx.stroke();
+      }
     }
   }
 
@@ -638,37 +646,42 @@ function dessinerUnite(ctx, u, temps) {
   ctx.strokeStyle = ajusterCouleur(couleurCorps, -60);
   ctx.lineWidth = Math.max(0.6, 0.8) / etat.camera.zoom;
   const pointeTeteX = xTete + 2.3 * echelle;
-  for (const cote of [-1, 1]) {
-    ctx.beginPath();
-    ctx.moveTo(pointeTeteX - 0.4 * echelle, cote * 0.9 * echelle);
-    ctx.lineTo(pointeTeteX + 1.5 * echelle, cote * 1.7 * echelle);
-    ctx.stroke();
+  if (!simplifie) {
+    for (const cote of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(pointeTeteX - 0.4 * echelle, cote * 0.9 * echelle);
+      ctx.lineTo(pointeTeteX + 1.5 * echelle, cote * 1.7 * echelle);
+      ctx.stroke();
+    }
   }
 
   // Antennes "coudées" (deux segments avec un angle net, jamais une
   // courbe lisse) — l'autre grand indice visuel qui distingue une
   // fourmi d'un termite, dont les antennes sont perlées et droites.
   // Le premier segment (scape) reste presque fixe, seul le second
-  // (flagelle) tâtonne, comme le ferait une vraie antenne.
-  ctx.strokeStyle = ajusterCouleur(couleurCorps, -55);
-  ctx.lineWidth = Math.max(0.6, 0.9) / etat.camera.zoom;
-  for (const cote of [-1, 1]) {
-    const tatonnement = Math.sin(vitesseAntennesIdle + cote * 0.6) * amplitudeAntennes;
-    const angleScape = cote * 0.5;
-    const angleFlagelle = cote * 1.2 + tatonnement;
+  // (flagelle) tâtonne, comme le ferait une vraie antenne. Omises en
+  // rendu simplifié comme les pattes.
+  if (!simplifie) {
+    ctx.strokeStyle = ajusterCouleur(couleurCorps, -55);
+    ctx.lineWidth = Math.max(0.6, 0.9) / etat.camera.zoom;
+    for (const cote of [-1, 1]) {
+      const tatonnement = Math.sin(vitesseAntennesIdle + cote * 0.6) * amplitudeAntennes;
+      const angleScape = cote * 0.5;
+      const angleFlagelle = cote * 1.2 + tatonnement;
 
-    const baseX = xTete;
-    const baseY = cote * 1.2 * echelle;
-    const coudeX = baseX + Math.cos(angleScape) * 3 * echelle;
-    const coudeY = baseY + Math.sin(angleScape) * 3 * echelle - cote * 0.3 * echelle;
-    const pointeX = coudeX + Math.cos(angleFlagelle) * 3.4 * echelle;
-    const pointeY = coudeY + Math.sin(angleFlagelle) * 3.4 * echelle;
+      const baseX = xTete;
+      const baseY = cote * 1.2 * echelle;
+      const coudeX = baseX + Math.cos(angleScape) * 3 * echelle;
+      const coudeY = baseY + Math.sin(angleScape) * 3 * echelle - cote * 0.3 * echelle;
+      const pointeX = coudeX + Math.cos(angleFlagelle) * 3.4 * echelle;
+      const pointeY = coudeY + Math.sin(angleFlagelle) * 3.4 * echelle;
 
-    ctx.beginPath();
-    ctx.moveTo(baseX, baseY);
-    ctx.lineTo(coudeX, coudeY);
-    ctx.lineTo(pointeX, pointeY);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      ctx.lineTo(coudeX, coudeY);
+      ctx.lineTo(pointeX, pointeY);
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
@@ -693,10 +706,25 @@ function dessinerUnite(ctx, u, temps) {
   }
 }
 
+// Seuil au-delà duquel on simplifie le rendu (pattes/antennes/
+// mandibules omises, ombre au sol omise) — trouvé lors d'un audit de
+// performance : le coût logique du jeu est négligeable même à 100+
+// unités (mesuré), mais chaque fourmi dessinée en détail complet
+// représente une bonne dizaine d'appels de tracé canevas (6 pattes +
+// 2 antennes + mandibules + ombre) ; sur un appareil bas de gamme,
+// c'est le VRAI goulot d'étranglement probable en combat de masse, pas
+// la logique de jeu. Le corps (3 segments), la barre de vie, l'anneau
+// de sélection et les chevrons de rang restent toujours dessinés :
+// seule la finition animée disparaît, jamais la lisibilité du combat.
+const SEUIL_RENDU_SIMPLIFIE = 45;
+
 function dessinerUnites(ctx, temps) {
   const zone = zoneVisibleMonde(40);
-  for (const u of etat.unites) {
-    if (u.x < zone.x1 || u.x > zone.x2 || u.y < zone.y1 || u.y > zone.y2) continue;
-    dessinerUnite(ctx, u, temps);
+  const visibles = etat.unites.filter((u) =>
+    u.x >= zone.x1 && u.x <= zone.x2 && u.y >= zone.y1 && u.y <= zone.y2
+  );
+  const simplifie = visibles.length > SEUIL_RENDU_SIMPLIFIE;
+  for (const u of visibles) {
+    dessinerUnite(ctx, u, temps, simplifie);
   }
 }
