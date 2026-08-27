@@ -17,6 +17,10 @@
 //   rechercherTechnologie { techId }
 //   atteindrePopulation   { quantite }
 //   construireBatiment    { batimentType, quantite }
+//   fonderNid             { quantite } — nids secondaires vivants (colonies.js)
+//   capturerColonieRivale  (aucun paramètre : nidEnnemi.capturee, infiltration.js)
+//   garnirBatiment         (aucun paramètre : au moins un bâtiment occupé, buildings.js)
+//   utiliserSuperarme     { quantite } — déclenchements réussis (superarme.js)
 // ===========================================================
 
 const MISSIONS = {
@@ -123,6 +127,65 @@ const MISSIONS = {
     ressourcesDepart: { nourriture: 400, materiaux: 400, eau: 200 },
     dureeLimite: null,
     recompense: { ressource: 'materiaux', montant: 1000 }
+  },
+  // ------------------------------------------------------------
+  // Missions 11-14 — chacune force explicitement l'usage d'une des
+  // mécaniques avancées introduites après la campagne d'origine
+  // (jeune reine, infiltration, garnison, super-arme), qu'aucune des
+  // dix premières missions ne demandait jusqu'ici.
+  // ------------------------------------------------------------
+  11: {
+    titre: "L'expansion",
+    objectifs: [
+      { type: 'fonderNid', quantite: 1, description: 'Fonder un nid secondaire avec une jeune reine' },
+      { type: 'collecterRessource', ressource: 'materiaux', montant: 300, description: 'Récolter 300 matériaux' }
+    ],
+    ennemis: { sauvages: ['scarabee', 'scarabee'] },
+    ressourcesDepart: { nourriture: 300, materiaux: 250, eau: 150 },
+    dureeLimite: null,
+    recompense: { ressource: 'nourriture', montant: 400 }
+  },
+  12: {
+    titre: 'Frappe chirurgicale',
+    objectifs: [
+      { type: 'capturerColonieRivale', description: "Infiltrer et capturer la colonie rivale plutôt que l'anéantir" }
+    ],
+    ennemis: { colonie: ['fourmiRouge', 'fourmiRouge', 'fourmiRouge', 'fourmiRouge', 'ouvriere', 'ouvriere'] },
+    ressourcesDepart: { nourriture: 400, materiaux: 400, eau: 200 },
+    dureeLimite: null,
+    recompense: { ressource: 'materiaux', montant: 500 }
+  },
+  13: {
+    titre: 'Garnison de fortune',
+    objectifs: [
+      { type: 'garnirBatiment', description: 'Garnir un bâtiment de production avec des unités combattantes' },
+      { type: 'survivre', duree: 150, description: 'Tenir 2m30 sous les assauts répétés' }
+    ],
+    ennemis: {
+      colonie: ['fourmiRouge', 'fourmiRouge', 'fourmiRouge', 'fourmiCharpentiere'],
+      sauvages: ['araignee', 'scarabee', 'scarabee']
+    },
+    ressourcesDepart: { nourriture: 350, materiaux: 300, eau: 200 },
+    dureeLimite: null,
+    recompense: { ressource: 'eau', montant: 400 }
+  },
+  14: {
+    titre: 'Le déluge',
+    objectifs: [
+      { type: 'utiliserSuperarme', quantite: 1, description: 'Déclencher la Pluie acide au moins une fois' },
+      { type: 'eliminerEnnemis', description: "Achever l'invasion" }
+    ],
+    ennemis: {
+      colonie: ['fourmiRouge', 'fourmiRouge', 'fourmiRouge', 'fourmiRouge', 'fourmiCharpentiere', 'fourmiCharpentiere', 'ouvriere', 'ouvriere'],
+      sauvages: ['araignee', 'araignee', 'scarabee', 'scarabee']
+    },
+    // Généreux à dessein : chercher stratPopulationI → II → stratSuperarme
+    // (plus le Centre de stratégie qui les porte) coûte à lui seul
+    // environ 940 matériaux / 530 nourriture avant même de compter
+    // l'entretien d'une armée pendant ce temps.
+    ressourcesDepart: { nourriture: 750, materiaux: 950, eau: 300 },
+    dureeLimite: null,
+    recompense: { ressource: 'materiaux', montant: 1500 }
   }
 };
 
@@ -201,6 +264,7 @@ function demarrerMission(id) {
   etat.progressionMission = {
     tempsEcoule: 0,
     unitesProduites: 0,
+    superarmesUtilisees: 0,
     baselineRessources: { ...etat.ressources }
   };
   etat.resultatPartie = null;
@@ -230,6 +294,14 @@ function evaluerObjectif(objectif, progression) {
       return etat.ressources.population >= objectif.quantite;
     case 'construireBatiment':
       return etat.batiments.filter((b) => b.type === objectif.batimentType).length >= (objectif.quantite || 1);
+    case 'fonderNid':
+      return etat.basesSecondaires.length >= (objectif.quantite || 1);
+    case 'capturerColonieRivale':
+      return nidEnnemi.capturee;
+    case 'garnirBatiment':
+      return etat.batiments.some((b) => TYPES_BATIMENT_PRODUCTION[b.type] && b.garnison && b.garnison.unites.length > 0);
+    case 'utiliserSuperarme':
+      return (progression.superarmesUtilisees || 0) >= (objectif.quantite || 1);
     default:
       return false;
   }
