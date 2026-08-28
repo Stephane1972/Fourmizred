@@ -123,10 +123,7 @@ function deplacerUnitesLibres(delta) {
       if (u.tacheActuelle === 'En déplacement') u.tacheActuelle = 'Inactive';
       continue;
     }
-    const angle = Math.atan2(u.destinationLibre.y - u.y, u.destinationLibre.x - u.x);
-    const pas = Math.min(def.vitesse * delta, d);
-    u.x += Math.cos(angle) * pas;
-    u.y += Math.sin(angle) * pas;
+    avancerVers(u, u.destinationLibre.x, u.destinationLibre.y, def.vitesse, delta, 6);
   }
 }
 
@@ -235,10 +232,7 @@ function deplacerUnitesEnAttaque(delta) {
     const def = TYPES_UNITE[u.type];
     const d = distance(u.x, u.y, cible.x, cible.y);
     if (d > def.portee) {
-      const angle = Math.atan2(cible.y - u.y, cible.x - u.x);
-      const pas = Math.min(def.vitesse * delta, d - def.portee + 1);
-      u.x += Math.cos(angle) * pas;
-      u.y += Math.sin(angle) * pas;
+      avancerVers(u, cible.x, cible.y, def.vitesse, delta, def.portee);
     }
   }
 }
@@ -499,10 +493,7 @@ function deplacerMenacesSauvages(delta) {
 
     const d = distance(c.x, c.y, cible.x, cible.y);
     if (d > def.portee) {
-      const angle = Math.atan2(cible.y - c.y, cible.x - c.x);
-      const pas = Math.min(def.vitesse * delta, d - def.portee + 1);
-      c.x += Math.cos(angle) * pas;
-      c.y += Math.sin(angle) * pas;
+      avancerVers(c, cible.x, cible.y, def.vitesse, delta, def.portee);
     }
   }
 }

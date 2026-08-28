@@ -660,6 +660,7 @@ function demarrerPartieLibre() {
   genererRessources();
   genererBatimentsProduction();
   genererColonieEnnemie();
+  genererObstacles();
   genererMenacesSauvages();
 }
 

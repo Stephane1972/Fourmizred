@@ -480,6 +480,7 @@ function rendreScene(temps) {
     dessinerNoeudRessource(ctx, noeud, temps);
   }
 
+  dessinerObstacles(ctx);
   dessinerBatimentsProduction(ctx);
   dessinerDefenses(ctx);
   dessinerLaboratoires(ctx);

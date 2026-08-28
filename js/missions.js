@@ -254,6 +254,7 @@ function demarrerMission(id) {
   // (mission.ennemis.colonie absent) : nidEnnemi est un objet unique
   // réutilisé d'une partie à l'autre, jamais recréé.
   nidEnnemi.capturee = false;
+  genererObstacles();
 
   Object.assign(etat.ressources, mission.ressourcesDepart);
 

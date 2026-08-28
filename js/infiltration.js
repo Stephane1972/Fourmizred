@@ -33,10 +33,7 @@ function deplacerInfiltratrices(delta) {
 
     const d = distance(u.x, u.y, nidEnnemi.x, nidEnnemi.y);
     if (d > nidEnnemi.rayon) {
-      const angle = Math.atan2(nidEnnemi.y - u.y, nidEnnemi.x - u.x);
-      const pas = Math.min(u.vitesse * delta, d - nidEnnemi.rayon + 1);
-      u.x += Math.cos(angle) * pas;
-      u.y += Math.sin(angle) * pas;
+      avancerVers(u, nidEnnemi.x, nidEnnemi.y, u.vitesse, delta, nidEnnemi.rayon);
     } else {
       capturerNidEnnemi(u);
       return; // une capture suffit ; inutile de continuer ce tour-ci

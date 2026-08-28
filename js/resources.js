@@ -212,10 +212,7 @@ function mettreAJourRecolte(delta) {
       }
       const d = distance(u.x, u.y, noeud.x, noeud.y);
       if (d > RAYON_TOUCHE_NOEUD) {
-        const angle = Math.atan2(noeud.y - u.y, noeud.x - u.x);
-        const pas = Math.min(def.vitesse * delta, d - RAYON_TOUCHE_NOEUD + 1);
-        u.x += Math.cos(angle) * pas;
-        u.y += Math.sin(angle) * pas;
+        avancerVers(u, noeud.x, noeud.y, def.vitesse, delta, RAYON_TOUCHE_NOEUD);
       } else {
         u.etatRecolte = 'recolte';
         u.minuteurRecolte = DUREE_RECOLTE;
@@ -241,10 +238,7 @@ function mettreAJourRecolte(delta) {
       const base = trouverBaseAllieeProche(u.x, u.y);
       const d = distance(u.x, u.y, base.x, base.y);
       if (d > base.rayon) {
-        const angle = Math.atan2(base.y - u.y, base.x - u.x);
-        const pas = Math.min(def.vitesse * delta, d - base.rayon + 1);
-        u.x += Math.cos(angle) * pas;
-        u.y += Math.sin(angle) * pas;
+        avancerVers(u, base.x, base.y, def.vitesse, delta, base.rayon);
       } else {
         u.etatRecolte = 'depose';
         u.minuteurRecolte = DUREE_DEPOSE;

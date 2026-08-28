@@ -98,7 +98,10 @@ function construireInstantane() {
     // centaines d'entrées) ; la visibilité ACTUELLE, elle, est
     // recalculée à chaque frame et n'a jamais besoin d'être persistée.
     brouillardExplore: grilleBrouillard ? Array.from(grilleBrouillard.explore) : [],
-    difficulte: etat.difficulte
+    difficulte: etat.difficulte,
+    // Rochers (obstacles.js) — position fixe une fois générés, jamais
+    // régénérés au hasard au chargement (voir demarrerPartie).
+    rochers: rochers.map((r) => ({ ...r }))
   };
 }
 
@@ -165,6 +168,12 @@ function appliquerInstantane(instantane) {
   if (instantane.difficulte && DIFFICULTES[instantane.difficulte]) {
     etat.difficulte = instantane.difficulte;
   }
+
+  // Rochers (obstacles.js) — restaurés tels quels ; absents sur une
+  // sauvegarde antérieure à leur ajout, volontairement (voir
+  // demarrerPartie, storage.js, pour l'explication complète).
+  rochers.length = 0;
+  if (instantane.rochers) rochers.push(...instantane.rochers);
 }
 
 // ---------------------------------------------------------
@@ -260,12 +269,18 @@ async function demarrerPartie() {
     // valeur par défaut (0,0) tant que genererColonieEnnemie() — qui
     // ne s'exécute, elle, que pour une partie neuve — n'a pas tourné.
     positionnerNidEnnemi();
+    // Rochers : restaurés par appliquerInstantane() s'ils étaient dans
+    // la sauvegarde ; sur une sauvegarde antérieure à leur ajout, on
+    // les laisse volontairement absents plutôt que d'en générer de
+    // nouveaux au hasard, qui pourraient apparaître en plein sur une
+    // unité ou un bâtiment déjà existant.
     console.log('Partie chargée depuis la sauvegarde automatique (', new Date(sauvegarde.horodatage).toLocaleString('fr-FR'), ')');
   } else {
     nouvellePartie();
     genererRessources();
     genererBatimentsProduction();
     genererColonieEnnemie();
+    genererObstacles();
     genererMenacesSauvages();
     console.log('Nouvelle partie démarrée (aucune sauvegarde trouvée).');
   }

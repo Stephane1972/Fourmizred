@@ -108,10 +108,7 @@ function mettreAJourFondation(delta) {
     if (u.etatFondation === 'enRoute' && u.fondationCible) {
       const d = distance(u.x, u.y, u.fondationCible.x, u.fondationCible.y);
       if (d > RAYON_ARRIVEE_FONDATION) {
-        const angle = Math.atan2(u.fondationCible.y - u.y, u.fondationCible.x - u.x);
-        const pas = Math.min(u.vitesse * delta, d - RAYON_ARRIVEE_FONDATION + 1);
-        u.x += Math.cos(angle) * pas;
-        u.y += Math.sin(angle) * pas;
+        avancerVers(u, u.fondationCible.x, u.fondationCible.y, u.vitesse, delta, RAYON_ARRIVEE_FONDATION);
       } else {
         u.etatFondation = 'construction';
         u.minuteurFondation = DUREE_FONDATION;
